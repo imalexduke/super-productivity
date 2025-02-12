@@ -1,7 +1,6 @@
-import { Injectable } from '@angular/core';
+import { Injectable, inject } from '@angular/core';
 import {
   ActivatedRouteSnapshot,
-  CanActivate,
   Router,
   RouterStateSnapshot,
   UrlTree,
@@ -17,8 +16,9 @@ import { Store } from '@ngrx/store';
 import { selectIsFocusOverlayShown } from './features/focus-mode/store/focus-mode.selectors';
 
 @Injectable({ providedIn: 'root' })
-export class ActiveWorkContextGuard implements CanActivate {
-  constructor(private _workContextService: WorkContextService, private _router: Router) {}
+export class ActiveWorkContextGuard {
+  private _workContextService = inject(WorkContextService);
+  private _router = inject(Router);
 
   canActivate(
     next: ActivatedRouteSnapshot,
@@ -39,11 +39,9 @@ export class ActiveWorkContextGuard implements CanActivate {
 }
 
 @Injectable({ providedIn: 'root' })
-export class ValidTagIdGuard implements CanActivate {
-  constructor(
-    private _tagService: TagService,
-    private _dataInitService: DataInitService,
-  ) {}
+export class ValidTagIdGuard {
+  private _tagService = inject(TagService);
+  private _dataInitService = inject(DataInitService);
 
   canActivate(
     next: ActivatedRouteSnapshot,
@@ -60,8 +58,8 @@ export class ValidTagIdGuard implements CanActivate {
 }
 
 @Injectable({ providedIn: 'root' })
-export class FocusOverlayOpenGuard implements CanActivate {
-  constructor(private _store: Store) {}
+export class FocusOverlayOpenGuard {
+  private _store = inject(Store);
 
   canActivate(
     next: ActivatedRouteSnapshot,
@@ -72,11 +70,9 @@ export class FocusOverlayOpenGuard implements CanActivate {
 }
 
 @Injectable({ providedIn: 'root' })
-export class ValidProjectIdGuard implements CanActivate {
-  constructor(
-    private _projectService: ProjectService,
-    private _dataInitService: DataInitService,
-  ) {}
+export class ValidProjectIdGuard {
+  private _projectService = inject(ProjectService);
+  private _dataInitService = inject(DataInitService);
 
   canActivate(
     next: ActivatedRouteSnapshot,

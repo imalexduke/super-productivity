@@ -1,16 +1,38 @@
-@import "src/variables";
+@import '../../../../variables';
 
 .row {
   display: flex;
-  margin-bottom: $s;
-  padding-bottom: $s;
-  //border-bottom: 1px dashed $light-theme-extra-border-color;
+  margin-bottom: $s * 3;
+  border: 1px solid $light-theme-extra-border-color;
+  padding: $s * 2;
+  box-shadow: $whiteframe-shadow-2dp;
+  border-radius: 8px;
+  position: relative;
 
   @include darkTheme() {
+    background: $dark-theme-bg-slightly-lighter;
     border-color: $dark-theme-extra-border-color;
+  }
+
+  @include mq(component) {
+    margin-bottom: 0;
   }
 }
 
 .field {
   flex-grow: 1;
+}
+
+.remove-btn {
+  position: absolute;
+  right: $s;
+  top: $s;
+}
+
+.list-wrapper {
+  @include mq(component) {
+    display: grid;
+    grid-template-columns: auto auto;
+    gap: 16px;
+  }
 }

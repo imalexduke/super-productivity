@@ -1,8 +1,8 @@
-import { Injectable } from '@angular/core';
-import { select, Store } from '@ngrx/store';
+import { Injectable, inject } from '@angular/core';
+import { Action, select, Store } from '@ngrx/store';
 import {
   selectAllTags,
-  selectAllTagsWithoutMyDay,
+  selectAllTagsWithoutMyDayAndNoList,
   selectTagById,
   selectTagsByIds,
 } from './store/tag.reducer';
@@ -18,16 +18,17 @@ import { Observable } from 'rxjs';
 import { Tag, TagState } from './tag.model';
 import { nanoid } from 'nanoid';
 import { DEFAULT_TAG } from './tag.const';
-import { TypedAction } from '@ngrx/store/src/models';
 
 @Injectable({
   providedIn: 'root',
 })
 export class TagService {
-  tags$: Observable<Tag[]> = this._store$.pipe(select(selectAllTags));
-  tagsNoMyDay$: Observable<Tag[]> = this._store$.pipe(select(selectAllTagsWithoutMyDay));
+  private _store$ = inject<Store<TagState>>(Store);
 
-  constructor(private _store$: Store<TagState>) {}
+  tags$: Observable<Tag[]> = this._store$.pipe(select(selectAllTags));
+  tagsNoMyDayAndNoList$: Observable<Tag[]> = this._store$.pipe(
+    select(selectAllTagsWithoutMyDayAndNoList),
+  );
 
   getTagById$(id: string): Observable<Tag> {
     return this._store$.pipe(select(selectTagById, { id }));
@@ -71,7 +72,7 @@ export class TagService {
     this._store$.dispatch(upsertTag({ tag }));
   }
 
-  getAddTagActionAndId(tag: Partial<Tag>): { action: TypedAction<any>; id: string } {
+  getAddTagActionAndId(tag: Partial<Tag>): { action: Action<any>; id: string } {
     const id = nanoid();
     return {
       id,

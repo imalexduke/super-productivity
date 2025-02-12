@@ -1,4 +1,4 @@
-import { Injectable } from '@angular/core';
+import { Injectable, inject } from '@angular/core';
 import { select, Store } from '@ngrx/store';
 import { updateGlobalConfigSection } from './store/global-config.actions';
 import { Observable } from 'rxjs';
@@ -9,16 +9,18 @@ import {
   GlobalSectionConfig,
   IdleConfig,
   MiscConfig,
+  ScheduleConfig,
+  ShortSyntaxConfig,
   SoundConfig,
   SyncConfig,
   TakeABreakConfig,
-  TimelineConfig,
 } from './global-config.model';
 import {
   selectConfigFeatureState,
   selectEvaluationConfig,
   selectIdleConfig,
   selectMiscConfig,
+  selectShortSyntaxConfig,
   selectSoundConfig,
   selectSyncConfig,
   selectTakeABreakConfig,
@@ -31,15 +33,17 @@ import { distinctUntilChangedObject } from '../../util/distinct-until-changed-ob
   providedIn: 'root',
 })
 export class GlobalConfigService {
-  cfg$: Observable<GlobalConfigState> = this._store.pipe(
-    select(selectConfigFeatureState),
-    distinctUntilChanged(distinctUntilChangedObject),
-    shareReplay(1),
-  );
+  private readonly _store = inject<Store<any>>(Store);
+
+  cfg$: Observable<GlobalConfigState>;
 
   misc$: Observable<MiscConfig> = this._store.pipe(
     select(selectMiscConfig),
     shareReplay(1),
+  );
+
+  shortSyntax$: Observable<ShortSyntaxConfig> = this._store.pipe(
+    select(selectShortSyntaxConfig),
   );
 
   sound$: Observable<SoundConfig> = this._store.pipe(
@@ -66,24 +70,31 @@ export class GlobalConfigService {
     shareReplay(1),
   );
 
-  timelineCfg$: Observable<TimelineConfig> = this._store.pipe(
+  timelineCfg$: Observable<ScheduleConfig> = this._store.pipe(
     select(selectTimelineConfig),
   );
 
   cfg?: GlobalConfigState;
 
-  constructor(private readonly _store: Store<any>) {
+  constructor() {
+    this.cfg$ = this._store.pipe(
+      select(selectConfigFeatureState),
+      distinctUntilChanged(distinctUntilChangedObject),
+      shareReplay(1),
+    );
     this.cfg$.subscribe((cfg) => (this.cfg = cfg));
   }
 
   updateSection(
     sectionKey: GlobalConfigSectionKey,
     sectionCfg: Partial<GlobalSectionConfig>,
+    isSkipSnack?: boolean,
   ): void {
     this._store.dispatch(
       updateGlobalConfigSection({
         sectionKey,
         sectionCfg,
+        isSkipSnack,
       }),
     );
   }

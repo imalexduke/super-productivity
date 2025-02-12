@@ -72,9 +72,7 @@ $short-syntax-bar-height: 28px;
 
     color: #000000;
     background: #ffffff;
-  }
 
-  input {
     @include darkTheme {
       background-color: $dark-theme-bg-lightest;
       color: $dark-theme-text-color-most-intense;
@@ -92,31 +90,25 @@ $short-syntax-bar-height: 28px;
 
 // NOTE: because it's ejected from the dom we need to use global styles
 ::ng-deep .search-mat-option {
-  .mat-option-text {
-    display: flex;
-    align-items: center;
-    min-width: 0;
+  tag {
+    flex-shrink: 0;
+  }
 
-    tag {
-      flex-shrink: 0;
-    }
+  .tag-title {
+    display: none !important;
+  }
 
-    .tag-title {
-      display: none !important;
-    }
+  span {
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    overflow: hidden;
+    margin-right: $s * 3;
+    flex-grow: 1;
+  }
 
-    span {
-      text-overflow: ellipsis;
-      white-space: nowrap;
-      overflow: hidden;
-      margin-right: $s * 3;
-      flex-grow: 1;
-    }
-
-    mat-icon {
-      margin-left: auto;
-      flex-shrink: 0;
-    }
+  mat-icon {
+    margin-left: auto;
+    flex-shrink: 0;
   }
 }
 
@@ -147,8 +139,10 @@ $short-syntax-bar-height: 28px;
     opacity: 1;
   }
 
+  /* stylelint-disable block-no-empty */
   @include mq(xs) {
   }
+  /* stylelint-enable block-no-empty */
 }
 
 .info-bar {

@@ -1,0 +1,17 @@
+@import '../../../../variables';
+
+.text {
+  max-width: 500px;
+}
+
+h1 > * {
+  vertical-align: middle;
+}
+
+:host {
+  position: relative;
+}
+
+:host ::ng-deep .extra-margin-top {
+  margin-top: $s * 4;
+}

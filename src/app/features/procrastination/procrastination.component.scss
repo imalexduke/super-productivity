@@ -1,11 +1,16 @@
 @import '../../../variables';
 
+:host {
+  mat-form-field {
+    display: block;
+  }
+}
+
 .page-wrapper {
   //text-align: center;
 }
 
 .tab-inner {
-  padding: $s;
   margin: $s;
   max-width: $component-max-width;
   position: relative;

@@ -1,4 +1,4 @@
-import { Injectable } from '@angular/core';
+import { Injectable, inject } from '@angular/core';
 import { TRACKING_INTERVAL } from '../../app.constants';
 import { interval, Observable, of } from 'rxjs';
 import {
@@ -8,15 +8,24 @@ import {
   share,
   shareReplay,
   startWith,
+  switchMap,
 } from 'rxjs/operators';
 import { Tick } from './tick.model';
 import { DateService } from 'src/app/core/date/date.service';
+import { GlobalConfigService } from 'src/app/features/config/global-config.service';
 
 @Injectable({
   providedIn: 'root',
 })
 export class GlobalTrackingIntervalService {
-  globalInterval$: Observable<number> = interval(TRACKING_INTERVAL).pipe(share());
+  private _dateService = inject(DateService);
+  private _globalConfigService = inject(GlobalConfigService);
+
+  globalInterval$: Observable<number> = this._globalConfigService.cfg$.pipe(
+    map((cfg) => cfg?.timeTracking?.trackingInterval ?? TRACKING_INTERVAL),
+    switchMap((_interval) => interval(_interval)),
+    share(),
+  );
   private _currentTrackingStart: number;
   tick$: Observable<Tick> = this.globalInterval$.pipe(
     map(() => {
@@ -40,7 +49,7 @@ export class GlobalTrackingIntervalService {
     shareReplay(1),
   );
 
-  constructor(private _dateService: DateService) {
+  constructor() {
     this._currentTrackingStart = Date.now();
   }
 }

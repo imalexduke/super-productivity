@@ -1,20 +1,21 @@
-import { Injectable } from '@angular/core';
+import { Injectable, inject } from '@angular/core';
 import { Actions, createEffect, ofType } from '@ngrx/effects';
 import { addTimeSpent, setCurrentTask, unsetCurrentTask } from './task.actions';
 import { select, Store } from '@ngrx/store';
 import { filter, tap, withLatestFrom } from 'rxjs/operators';
 import { selectCurrentTask } from './task.selectors';
-import { Observable } from 'rxjs';
-import { IPC } from '../../../../../electron/shared-with-frontend/ipc-events.const';
 import { IS_ELECTRON } from '../../../app.constants';
 import { GlobalConfigService } from '../../config/global-config.service';
-import { ElectronService } from '../../../core/electron/electron.service';
-import { ipcRenderer } from 'electron';
+import { selectIsFocusOverlayShown } from '../../focus-mode/store/focus-mode.selectors';
 
 // TODO send message to electron when current task changes here
 
 @Injectable()
 export class TaskElectronEffects {
+  private _actions$ = inject(Actions);
+  private _store$ = inject<Store<any>>(Store);
+  private _configService = inject(GlobalConfigService);
+
   taskChangeElectron$: any = createEffect(
     () =>
       this._actions$.pipe(
@@ -22,62 +23,54 @@ export class TaskElectronEffects {
         withLatestFrom(this._store$.pipe(select(selectCurrentTask))),
         tap(([action, current]) => {
           if (IS_ELECTRON) {
-            (this._electronService.ipcRenderer as typeof ipcRenderer).send(
-              IPC.CURRENT_TASK_UPDATED,
-              {
-                current,
-              },
-            );
+            window.ea.updateCurrentTask(current);
           }
         }),
       ),
     { dispatch: false },
   );
 
-  setTaskBarNoProgress$: Observable<any> = createEffect(
-    () =>
-      this._actions$.pipe(
-        ofType(setCurrentTask),
-        filter(() => IS_ELECTRON),
-        tap(({ id }) => {
-          if (!id) {
-            (this._electronService.ipcRenderer as typeof ipcRenderer).send(
-              IPC.SET_PROGRESS_BAR,
-              {
+  setTaskBarNoProgress$ =
+    IS_ELECTRON &&
+    createEffect(
+      () =>
+        this._actions$.pipe(
+          ofType(setCurrentTask),
+          tap(({ id }) => {
+            if (!id) {
+              window.ea.setProgressBar({
                 progress: 0,
-              },
-            );
-          }
-        }),
-      ),
-    { dispatch: false },
-  );
+                progressBarMode: 'pause',
+              });
+            }
+          }),
+        ),
+      { dispatch: false },
+    );
 
-  setTaskBarProgress$: Observable<any> = createEffect(
-    () =>
-      this._actions$.pipe(
-        ofType(addTimeSpent),
-        filter(() => IS_ELECTRON),
-        withLatestFrom(this._configService.cfg$),
-        // we display pomodoro progress for pomodoro
-        filter(([a, cfg]) => !cfg || !cfg.pomodoro.isEnabled),
-        tap(([{ task }]) => {
-          const progress = task.timeSpent / task.timeEstimate;
-          (this._electronService.ipcRenderer as typeof ipcRenderer).send(
-            IPC.SET_PROGRESS_BAR,
-            {
+  setTaskBarProgress$: any =
+    IS_ELECTRON &&
+    createEffect(
+      () =>
+        this._actions$.pipe(
+          ofType(addTimeSpent),
+          withLatestFrom(
+            this._configService.cfg$,
+            this._store$.select(selectIsFocusOverlayShown),
+          ),
+          // we display pomodoro progress for pomodoro
+          filter(
+            ([a, cfg, isFocusSessionRunning]) =>
+              !isFocusSessionRunning && (!cfg || !cfg.pomodoro.isEnabled),
+          ),
+          tap(([{ task }]) => {
+            const progress = task.timeSpent / task.timeEstimate;
+            window.ea.setProgressBar({
               progress,
-            },
-          );
-        }),
-      ),
-    { dispatch: false },
-  );
-
-  constructor(
-    private _actions$: Actions,
-    private _store$: Store<any>,
-    private _configService: GlobalConfigService,
-    private _electronService: ElectronService,
-  ) {}
+              progressBarMode: 'normal',
+            });
+          }),
+        ),
+      { dispatch: false },
+    );
 }

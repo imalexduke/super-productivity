@@ -1,11 +1,12 @@
 import {
   hideAddTaskBar,
-  hideNotes,
+  hideNotesAndAddTaskPanel,
   hideSearchBar,
   hideSideNav,
   showAddTaskBar,
   showSearchBar,
   toggleAddTaskBar,
+  toggleIssuePanel,
   toggleSearchBar,
   toggleShowNotes,
   toggleSideNav,
@@ -24,8 +25,10 @@ export interface LayoutState {
   isShowAddTaskBar: boolean;
   isShowBookmarkBar: boolean;
   isShowNotes: boolean;
+  isShowIssuePanel: boolean;
   isShowSearchBar: boolean;
   isShowSideNav: boolean;
+  isShowCelebrate: boolean;
 }
 
 const _initialLayoutState: LayoutState = {
@@ -34,6 +37,8 @@ const _initialLayoutState: LayoutState = {
   isShowSideNav: false,
   isShowSearchBar: false,
   isShowNotes: false,
+  isShowIssuePanel: false,
+  isShowCelebrate: false,
 };
 
 export const selectLayoutFeatureState =
@@ -54,9 +59,19 @@ export const selectIsShowNotes = createSelector(
   (state) => state.isShowNotes,
 );
 
+export const selectIsShowIssuePanel = createSelector(
+  selectLayoutFeatureState,
+  (state) => state.isShowIssuePanel,
+);
+
 export const selectIsShowSearchBar = createSelector(
   selectLayoutFeatureState,
   (state) => state.isShowSearchBar,
+);
+
+export const selectIsShowCelebrate = createSelector(
+  selectLayoutFeatureState,
+  (state) => state.isShowCelebrate,
 );
 
 const _reducer = createReducer<LayoutState>(
@@ -84,9 +99,23 @@ const _reducer = createReducer<LayoutState>(
 
   on(toggleSideNav, (state) => ({ ...state, isShowSideNav: !state.isShowSideNav })),
 
-  on(toggleShowNotes, (state) => ({ ...state, isShowNotes: !state.isShowNotes })),
+  on(toggleShowNotes, (state) => ({
+    ...state,
+    isShowNotes: !state.isShowNotes,
+    isShowIssuePanel: false,
+  })),
 
-  on(hideNotes, (state) => ({ ...state, isShowNotes: false })),
+  on(hideNotesAndAddTaskPanel, (state) => ({
+    ...state,
+    isShowNotes: false,
+    isShowIssuePanel: false,
+  })),
+
+  on(toggleIssuePanel, (state) => ({
+    ...state,
+    isShowIssuePanel: !state.isShowIssuePanel,
+    isShowNotes: false,
+  })),
 );
 
 export const layoutReducer = (

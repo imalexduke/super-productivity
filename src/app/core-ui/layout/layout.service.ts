@@ -1,12 +1,14 @@
-import { Injectable } from '@angular/core';
+import { inject, Injectable } from '@angular/core';
 import {
   hideAddTaskBar,
-  hideNotes,
+  hideIssuePanel,
+  hideNotesAndAddTaskPanel,
   hideSearchBar,
   hideSideNav,
   showAddTaskBar,
   showSearchBar,
   toggleAddTaskBar,
+  toggleIssuePanel,
   toggleSearchBar,
   toggleShowNotes,
   toggleSideNav,
@@ -16,6 +18,7 @@ import { select, Store } from '@ngrx/store';
 import {
   LayoutState,
   selectIsShowAddTaskBar,
+  selectIsShowIssuePanel,
   selectIsShowNotes,
   selectIsShowSearchBar,
   selectIsShowSideNav,
@@ -24,6 +27,7 @@ import { filter, map, switchMap, withLatestFrom } from 'rxjs/operators';
 import { BreakpointObserver } from '@angular/cdk/layout';
 import { NavigationStart, Router } from '@angular/router';
 import { WorkContextService } from '../../features/work-context/work-context.service';
+import { selectMiscConfig } from '../../features/config/store/global-config.reducer';
 
 const NAV_ALWAYS_VISIBLE = 1200;
 const NAV_OVER_RIGHT_PANEL_NEXT = 800;
@@ -34,6 +38,11 @@ const XS_MAX = 599;
   providedIn: 'root',
 })
 export class LayoutService {
+  private _store$ = inject<Store<LayoutState>>(Store);
+  private _router = inject(Router);
+  private _workContextService = inject(WorkContextService);
+  private _breakPointObserver = inject(BreakpointObserver);
+
   isScreenXs$: Observable<boolean> = this._breakPointObserver
     .observe([`(max-width: ${XS_MAX}px)`])
     .pipe(map((result) => result.matches));
@@ -44,6 +53,7 @@ export class LayoutService {
   isShowSearchBar$: Observable<boolean> = this._store$.pipe(
     select(selectIsShowSearchBar),
   );
+
   isNavAlwaysVisible$: Observable<boolean> = this._breakPointObserver
     .observe([`(min-width: ${NAV_ALWAYS_VISIBLE}px)`])
     .pipe(map((result) => result.matches));
@@ -53,7 +63,14 @@ export class LayoutService {
   isRightPanelOver$: Observable<boolean> = this._breakPointObserver
     .observe([`(min-width: ${BOTH_OVER}px)`])
     .pipe(map((result) => !result.matches));
-  isNavOver$: Observable<boolean> = this.isRightPanelNextNavOver$.pipe(map((v) => !v));
+  isNavOver$: Observable<boolean> = this._store$.select(selectMiscConfig).pipe(
+    switchMap((miscCfg) => {
+      if (miscCfg.isUseMinimalNav) {
+        return of(false);
+      }
+      return this.isRightPanelNextNavOver$.pipe(map((v) => !v));
+    }),
+  );
   isScrolled$: BehaviorSubject<boolean> = new BehaviorSubject<boolean>(false);
   private _isShowSideNav$: Observable<boolean> = this._store$.pipe(
     select(selectIsShowSideNav),
@@ -69,12 +86,12 @@ export class LayoutService {
   );
   isShowNotes$: Observable<boolean> = this._isShowNotes$.pipe();
 
-  constructor(
-    private _store$: Store<LayoutState>,
-    private _router: Router,
-    private _workContextService: WorkContextService,
-    private _breakPointObserver: BreakpointObserver,
-  ) {
+  private _isShowIssuePanel$: Observable<boolean> = this._store$.pipe(
+    select(selectIsShowIssuePanel),
+  );
+  isShowIssuePanel$: Observable<boolean> = this._isShowIssuePanel$.pipe();
+
+  constructor() {
     this.isNavOver$
       .pipe(
         switchMap((isNavOver) =>
@@ -131,6 +148,14 @@ export class LayoutService {
   }
 
   hideNotes(): void {
-    this._store$.dispatch(hideNotes());
+    this._store$.dispatch(hideNotesAndAddTaskPanel());
+  }
+
+  toggleAddTaskPanel(): void {
+    this._store$.dispatch(toggleIssuePanel());
+  }
+
+  hideAddTaskPanel(): void {
+    this._store$.dispatch(hideIssuePanel());
   }
 }

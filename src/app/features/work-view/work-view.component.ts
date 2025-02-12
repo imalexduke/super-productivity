@@ -4,7 +4,8 @@ import {
   ChangeDetectorRef,
   Component,
   ElementRef,
-  Input,
+  inject,
+  input,
   OnDestroy,
   OnInit,
   ViewChild,
@@ -12,9 +13,8 @@ import {
 import { TaskService } from '../tasks/task.service';
 import { expandAnimation, expandFadeAnimation } from '../../ui/animations/expand.ani';
 import { LayoutService } from '../../core-ui/layout/layout.service';
-import { DragulaService } from 'ng2-dragula';
 import { TakeABreakService } from '../take-a-break/take-a-break.service';
-import { ActivatedRoute } from '@angular/router';
+import { ActivatedRoute, RouterLink } from '@angular/router';
 import {
   from,
   fromEvent,
@@ -24,7 +24,7 @@ import {
   timer,
   zip,
 } from 'rxjs';
-import { TaskPlanned, TaskWithSubTasks } from '../tasks/task.model';
+import { TaskWithSubTasks } from '../tasks/task.model';
 import { delay, filter, map, switchMap } from 'rxjs/operators';
 import { fadeAnimation } from '../../ui/animations/fade.ani';
 import { PlanningModeService } from '../planning-mode/planning-mode.service';
@@ -35,9 +35,23 @@ import { WorkContextService } from '../work-context/work-context.service';
 import { TaskRepeatCfgService } from '../task-repeat-cfg/task-repeat-cfg.service';
 import { TaskRepeatCfg } from '../task-repeat-cfg/task-repeat-cfg.model';
 import { ProjectService } from '../project/project.service';
-
-const SUB = 'SUB';
-const PARENT = 'PARENT';
+import { AddTasksForTomorrowService } from '../add-tasks-for-tomorrow/add-tasks-for-tomorrow.service';
+import { toSignal } from '@angular/core/rxjs-interop';
+import { RightPanelComponent } from '../right-panel/right-panel.component';
+import { CdkDropListGroup } from '@angular/cdk/drag-drop';
+import { CdkScrollable } from '@angular/cdk/scrolling';
+import { MatTooltip } from '@angular/material/tooltip';
+import { MatIcon } from '@angular/material/icon';
+import { MatButton, MatFabButton, MatMiniFabButton } from '@angular/material/button';
+import { ImprovementBannerComponent } from '../metric/improvement-banner/improvement-banner.component';
+import { AddTaskBarComponent } from '../tasks/add-task-bar/add-task-bar.component';
+import { AddScheduledTodayOrTomorrowBtnComponent } from '../add-tasks-for-tomorrow/add-scheduled-for-tomorrow/add-scheduled-today-or-tomorrow-btn.component';
+import { TaskListComponent } from '../tasks/task-list/task-list.component';
+import { SplitComponent } from './split/split.component';
+import { BacklogComponent } from './backlog/backlog.component';
+import { AsyncPipe } from '@angular/common';
+import { MsToStringPipe } from '../../ui/duration/ms-to-string.pipe';
+import { TranslatePipe } from '@ngx-translate/core';
 
 @Component({
   selector: 'work-view',
@@ -50,12 +64,50 @@ const PARENT = 'PARENT';
     workViewProjectChangeAnimation,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
+  imports: [
+    RightPanelComponent,
+    CdkDropListGroup,
+    CdkScrollable,
+    MatTooltip,
+    MatIcon,
+    MatMiniFabButton,
+    ImprovementBannerComponent,
+    MatButton,
+    RouterLink,
+    AddTaskBarComponent,
+    AddScheduledTodayOrTomorrowBtnComponent,
+    TaskListComponent,
+    SplitComponent,
+    BacklogComponent,
+    MatFabButton,
+    AsyncPipe,
+    MsToStringPipe,
+    TranslatePipe,
+  ],
 })
 export class WorkViewComponent implements OnInit, OnDestroy, AfterContentInit {
-  @Input() undoneTasks: TaskWithSubTasks[] = [];
-  @Input() doneTasks: TaskWithSubTasks[] = [];
-  @Input() backlogTasks: TaskWithSubTasks[] = [];
-  @Input() isShowBacklog: boolean = false;
+  taskService = inject(TaskService);
+  takeABreakService = inject(TakeABreakService);
+  planningModeService = inject(PlanningModeService);
+  improvementService = inject(ImprovementService);
+  layoutService = inject(LayoutService);
+  workContextService = inject(WorkContextService);
+  private _taskRepeatCfgService = inject(TaskRepeatCfgService);
+  private _activatedRoute = inject(ActivatedRoute);
+  private _projectService = inject(ProjectService);
+  private _cd = inject(ChangeDetectorRef);
+  private _addTasksForTomorrowService = inject(AddTasksForTomorrowService);
+
+  // TODO refactor all to signals
+  undoneTasks = input<TaskWithSubTasks[]>([]);
+  doneTasks = input<TaskWithSubTasks[]>([]);
+  backlogTasks = input<TaskWithSubTasks[]>([]);
+  isShowBacklog = input<boolean>(false);
+
+  isPlanningMode = toSignal(this.planningModeService.isPlanningMode$);
+  todayRemainingInProject = toSignal(this.workContextService.todayRemainingInProject$);
+  estimateRemainingToday = toSignal(this.workContextService.estimateRemainingToday$);
+  workingToday = toSignal(this.workContextService.workingToday$);
 
   isShowTimeWorkedWithoutBreak: boolean = true;
   splitInputPos: number = 100;
@@ -81,25 +133,13 @@ export class WorkViewComponent implements OnInit, OnDestroy, AfterContentInit {
   // eslint-disable-next-line no-mixed-operators
   private _tomorrow: number = Date.now() + 24 * 60 * 60 * 1000;
   repeatableScheduledForTomorrow$: Observable<TaskRepeatCfg[]> =
-    this._taskRepeatCfgService.getRepeatTableTasksDueForDay$(this._tomorrow);
+    this._taskRepeatCfgService.getRepeatTableTasksDueForDayOnly$(this._tomorrow);
 
   private _subs: Subscription = new Subscription();
   private _switchListAnimationTimeout?: number;
 
-  constructor(
-    public taskService: TaskService,
-    public takeABreakService: TakeABreakService,
-    public planningModeService: PlanningModeService,
-    public improvementService: ImprovementService,
-    public layoutService: LayoutService,
-    public workContextService: WorkContextService,
-    private _taskRepeatCfgService: TaskRepeatCfgService,
-    private _dragulaService: DragulaService,
-    private _activatedRoute: ActivatedRoute,
-    private _projectService: ProjectService,
-    private _cd: ChangeDetectorRef,
-  ) {}
-
+  // TODO: Skipped for migration because:
+  //  Accessor queries cannot be migrated as they are too complex.
   @ViewChild('splitTopEl', { read: ElementRef }) set splitTopElRef(ref: ElementRef) {
     if (ref) {
       this.splitTopEl$.next(ref.nativeElement);
@@ -109,33 +149,7 @@ export class WorkViewComponent implements OnInit, OnDestroy, AfterContentInit {
   ngOnInit(): void {
     // eslint-disable-next-line no-mixed-operators
     this._tomorrow = Date.now() + 24 * 60 * 60 * 1000;
-    const sub = this._dragulaService.find(SUB);
-    const par = this._dragulaService.find(PARENT);
 
-    if (!sub) {
-      this._dragulaService.createGroup(SUB, {
-        direction: 'vertical',
-        moves: (el, container, handle) => {
-          return (
-            !!handle &&
-            handle.className.indexOf &&
-            handle.className.indexOf('handle-sub') > -1
-          );
-        },
-      });
-    }
-    if (!par) {
-      this._dragulaService.createGroup(PARENT, {
-        direction: 'vertical',
-        moves: (el, container, handle) => {
-          return (
-            !!handle &&
-            handle.className.indexOf &&
-            handle.className.indexOf('handle-par') > -1
-          );
-        },
-      });
-    }
     // preload
     // TODO check
     // this._subs.add(this.workContextService.backlogTasks$.subscribe());
@@ -178,19 +192,6 @@ export class WorkViewComponent implements OnInit, OnDestroy, AfterContentInit {
 
   startWork(): void {
     this.planningModeService.leavePlanningMode();
-  }
-
-  // NOTE: there is a duplicate of this in plan-tasks-tomorrow.component
-  addAllPlannedToDayAndCreateRepeatable(
-    plannedTasks: TaskPlanned[],
-    repeatableScheduledForTomorrow: TaskRepeatCfg[],
-  ): void {
-    this._taskRepeatCfgService.addAllPlannedToDayAndCreateRepeatable(
-      plannedTasks,
-      repeatableScheduledForTomorrow,
-      this.taskService.currentTaskId,
-      this._tomorrow,
-    );
   }
 
   resetBreakTimer(): void {

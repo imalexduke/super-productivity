@@ -2,16 +2,18 @@ name: 'Lint & Test PRs'
 
 on: [pull_request]
 
+permissions:
+  pull-requests: write
+
 jobs:
   test-on-linux:
     runs-on: ubuntu-latest
-
     steps:
       - uses: actions/setup-node@v3
         with:
-          node-version: 16
+          node-version: 20
       - name: Check out Git repository
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
         with:
           persist-credentials: false
       # work around for npm installs from git+https://github.com/johannesjo/J2M.git
@@ -24,7 +26,7 @@ jobs:
         id: npm-cache-dir
         run: |
           echo "::set-output name=dir::$(npm config get cache)"
-      - uses: actions/cache@v3
+      - uses: actions/cache@v4
         id: npm-cache # use this to check for `cache-hit` ==> if: steps.npm-cache.outputs.cache-hit != 'true'
         with:
           path: ${{ steps.npm-cache-dir.outputs.dir }}
@@ -36,6 +38,38 @@ jobs:
         #  if: steps.npm-cache.outputs.cache-hit != 'true'
         run: npm i
 
-      - run: npm run lint
+      - run: npm run lint:ci
       - run: npm run test
       - run: npm run e2e
+      - name: Upload performance metrics as an artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: nightwatch-performance-metrics
+          path: perf-metrics*.json
+
+      - name: Read performance metrics to env
+        # if: github.event_name == 'pull_request'
+        run: |
+          perfResult=$(node tools/gen-perf-metrics.js)
+          echo "e2ePerfResult<<EOF" >> $GITHUB_ENV
+          echo "$perfResult" >> $GITHUB_ENV
+          echo "EOF" >> $GITHUB_ENV
+          echo $perfResult
+          echo $GITHUB_ENV
+      - name: Attach performance metrics to PR as comment
+        # if: github.event_name == 'pull_request'
+        uses: marocchino/sticky-pull-request-comment@v2
+        continue-on-error: true
+        with:
+          #          header: test
+          message: |
+            Perf Result
+            ${{ env.e2ePerfResult }}
+
+      - name: 'Upload E2E screenshots on failure'
+        if: ${{ always() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2eScreenshots
+          path: e2e/screenshots/**/*.*
+          retention-days: 5

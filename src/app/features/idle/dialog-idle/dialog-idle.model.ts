@@ -12,6 +12,7 @@ export interface SimpleCounterIdleBtn {
 export interface DialogIdleReturnData {
   trackItems: IdleTrackItem[];
   simpleCounterToggleBtnsWhenNoTrackItems?: SimpleCounterIdleBtn[];
+  isResetBreakTimer: boolean;
 }
 
 export interface DialogIdlePassedData {
@@ -30,7 +31,7 @@ export interface DialogIdleSplitReturnData {
 }
 
 export interface IdleTrackItem {
-  type: 'BREAK' | 'TASK' | 'TASK_AND_BREAK';
+  type: 'BREAK' | 'TASK';
   time: number | 'IDLE_TIME';
   simpleCounterToggleBtns: SimpleCounterIdleBtn[];
   task?: Task;

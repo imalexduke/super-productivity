@@ -8,6 +8,8 @@ import { Tag } from '../../features/tag/tag.model';
 import { createAppDataCompleteMock } from '../../util/app-data-mock';
 import { DEFAULT_PROJECT } from '../../features/project/project.const';
 import { Note } from '../../features/note/note.model';
+import { IssueProvider } from '../../features/issue/issue.model';
+/* eslint-disable @typescript-eslint/naming-convention */
 
 // const BASE_STATE_KEYS: (keyof AppBaseData)[] = [
 //   'task',
@@ -28,6 +30,8 @@ describe('isValidAppData()', () => {
   beforeEach(() => {
     mock = createAppDataCompleteMock();
     spyOn(window, 'alert').and.stub();
+    // for mocking away dev error confirm
+    spyOn(window, 'confirm').and.returnValue(true);
   });
 
   it('should work for valid data', () => {
@@ -45,6 +49,7 @@ describe('isValidAppData()', () => {
       'tag',
       'globalConfig',
       'taskArchive',
+      // TODO add issueProvider later
     ].forEach((prop) => {
       it('missing prop ' + prop, () => {
         expect(
@@ -356,6 +361,22 @@ describe('isValidAppData()', () => {
           } as any,
         }),
       ).toThrowError(`projectId NON_EXISTENT from task not existing`);
+    });
+
+    it('missing defaultProjectId for issueProvider', () => {
+      expect(() =>
+        isValidAppData({
+          ...mock,
+          issueProvider: {
+            ...mock.issueProvider,
+            ...fakeEntityStateFromArray<IssueProvider>([
+              {
+                defaultProjectId: 'NON_EXISTENT',
+              },
+            ]),
+          } as any,
+        }),
+      ).toThrowError(`defaultProjectId NON_EXISTENT from issueProvider not existing`);
     });
 
     it('wrong projectIds for listed tasks', () => {

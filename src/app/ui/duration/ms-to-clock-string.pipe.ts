@@ -1,5 +1,5 @@
 import { Pipe, PipeTransform } from '@angular/core';
-import * as moment from 'moment';
+import moment from 'moment';
 
 export const msToClockString = (
   value: any,
@@ -27,9 +27,7 @@ export const msToClockString = (
   return parsed.trim();
 };
 
-@Pipe({
-  name: 'msToClockString',
-})
+@Pipe({ name: 'msToClockString' })
 export class MsToClockStringPipe implements PipeTransform {
   transform: (value: any, ...args: any[]) => any = msToClockString;
 }

@@ -1,4 +1,4 @@
-import { Injectable } from '@angular/core';
+import { inject, Injectable } from '@angular/core';
 import { Actions, createEffect, ofType } from '@ngrx/effects';
 import { take, tap } from 'rxjs/operators';
 import { loadAllData } from '../../root-store/meta/load-all-data.action';
@@ -8,12 +8,17 @@ import { LocalBackupService } from './local-backup.service';
 import { DataImportService } from '../sync/data-import.service';
 import { TranslateService } from '@ngx-translate/core';
 import { T } from '../../t.const';
-import * as moment from 'moment';
+import moment from 'moment';
 import { IS_ANDROID_BACKUP_READY } from '../../features/android/android-interface';
 import { IS_ANDROID_WEB_VIEW } from '../../util/is-android-web-view';
 
 @Injectable()
 export class LocalBackupEffects {
+  private _actions$ = inject(Actions);
+  private _localBackupService = inject(LocalBackupService);
+  private _dataImportService = inject(DataImportService);
+  private _translateService = inject(TranslateService);
+
   checkForBackupIfNoTasks$: any =
     (IS_ELECTRON || IS_ANDROID_BACKUP_READY) &&
     createEffect(
@@ -28,20 +33,13 @@ export class LocalBackupEffects {
       { dispatch: false },
     );
 
-  constructor(
-    private _actions$: Actions,
-    private _localBackupService: LocalBackupService,
-    private _dataImportService: DataImportService,
-    private _translateService: TranslateService,
-  ) {}
-
   private async _checkForBackupIfEmpty(appDataComplete: AppDataComplete): Promise<void> {
     if (
       appDataComplete.task.ids.length === 0 &&
       appDataComplete.taskArchive.ids.length === 0 &&
       !appDataComplete.lastLocalSyncModelChange
     ) {
-      const backupMeta = await this._localBackupService.isBackupAvailable();
+      const backupMeta = await this._localBackupService.checkBackupAvailable();
 
       // ELECTRON
       // --------

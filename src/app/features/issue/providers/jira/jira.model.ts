@@ -12,7 +12,7 @@ export enum JiraWorklogExportDefaultTime {
 
 export interface JiraTransitionConfig {
   // NOTE: keys mirror IssueLocalState type
-  OPEN: JiraTransitionOption;
+  // OPEN: JiraTransitionOption;
   IN_PROGRESS: JiraTransitionOption;
   DONE: JiraTransitionOption;
 }
@@ -22,14 +22,11 @@ export interface JiraCfg extends BaseIssueProviderCfg {
   host: string | null;
   userName: string | null;
   password?: string | null;
-  isAutoPollTickets: boolean;
-  isWonkyCookieMode: boolean;
   usePAT: boolean;
 
   isAllowSelfSignedCertificate: boolean;
   searchJqlQuery: string;
 
-  isAutoAddToBacklog: boolean;
   autoAddBacklogJqlQuery: string;
 
   isWorklogEnabled: boolean;

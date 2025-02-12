@@ -1,5 +1,4 @@
 @import '../../../../variables';
-@import '~angular-material-css-vars/src/lib/public-util';
 @import './task.component.mixins';
 
 // TASK BOX STYLES
@@ -83,7 +82,7 @@
   }
 
   :host-context(.isDarkTheme).isDone & {
-    background: $dark05;
+    background: $task-c-bg-done-dark;
   }
 
   :host-context(.isDarkTheme).isSelected.isSelected & {
@@ -241,7 +240,11 @@
   justify-content: center;
   min-height: 36px;
   flex-grow: 1;
+  flex-shrink: 1;
   flex-basis: 70%;
+  // we cannot do this since this cuts of the box shadow of the task edit
+  //overflow: hidden;
+
   @include mq(xs, max) {
     //margin-bottom: 5px;
     //flex-shrink: 0;
@@ -281,16 +284,22 @@
   button {
     margin-top: auto;
     margin-bottom: auto;
+    height: 100% !important;
     border-radius: $card-border-radius;
-    height: 100%;
+
+    ::ng-deep {
+      .mat-mdc-button-persistent-ripple {
+        border-radius: $card-border-radius;
+      }
+    }
 
     &:hover {
-      @include darkTheme() {
-        background: rgba(255, 255, 255, 0.1);
-      }
-      @include lightTheme() {
-        background: rgba(0, 0, 0, 0.05);
-      }
+      //@include darkTheme() {
+      //  background: rgba(255, 255, 255, 0.1);
+      //}
+      //@include lightTheme() {
+      //  background: rgba(0, 0, 0, 0.05);
+      //}
     }
   }
 
@@ -309,117 +318,19 @@
   }
 }
 
-.hover-controls {
-  transform-origin: right center;
-  position: absolute;
-  right: 100%;
-  top: 0;
-  bottom: 0;
-  z-index: $z-hover-controls;
-  display: none;
-  border-radius: $card-border-radius;
-
-  :host-context([dir='rtl']) & {
-    position: absolute;
-    transform-origin: left center;
-    left: 100%;
-    right: unset;
-    z-index: $z-hover-controls;
-  }
-
-  @include mq(xs, max) {
-    :host-context(.isTouchOnly) & {
-      display: none !important;
-    }
-  }
-
-  button {
-    margin-top: auto;
-    margin-bottom: auto;
-    //height: 100%;
-  }
-
-  .first-line:hover & {
-    display: flex;
-    background: $task-c-bg-light;
-
-    @include darkTheme() {
-      background: $task-c-bg-dark;
-    }
-
-    :host-context(.isLightTheme).isSelected & {
-      background: $task-c-selected-bg-light;
-    }
-
-    :host-context(.isDarkTheme).isSelected & {
-      background: $task-c-selected-bg-dark;
-    }
-
-    :host-context(.isDarkTheme).isCurrent & {
-      background: $task-c-current-bg-dark;
-    }
-
-    :host-context(.isDarkTheme) .sub-tasks.sub-tasks ::ng-deep & {
-      background: $sub-task-c-bg-dark;
-    }
-
-    :host-context(.isDarkTheme) .sub-tasks.sub-tasks ::ng-deep .isSelected & {
-      background: $task-c-selected-bg-dark;
-    }
-
-    :host-context(.isDarkTheme) .sub-tasks.sub-tasks ::ng-deep .isCurrent & {
-      background: $task-c-current-bg-dark;
-    }
-  }
-
-  // extra hitarea
-  &:after {
-    position: absolute;
-    top: -$s * 1.5;
-    right: 0;
-    left: -$s * 1.5;
-    bottom: -$s * 1.5;
-    content: '';
-
-    :host-context([dir='rtl']) & {
-      right: -$s * 1.5;
-      left: 0;
-    }
-  }
-
-  @include lightTheme() {
-    &:before {
-      content: '';
-      border-left: 1px solid;
-      width: 1px;
-      height: 90%;
-      position: absolute;
-      left: 0;
-      top: 5%;
-      opacity: 0.5;
-
-      :host-context([dir='rtl']) & {
-        right: 0;
-      }
-    }
-  }
-}
-
 // OTHER UI ELEMENTS
 // -----------------
 .title-and-tags-wrapper {
   flex-grow: 1;
+  flex-shrink: 1;
+  // we cannot do this since this cuts of the box shadow of the task edit
+  //overflow: hidden;
 
   > * {
     @include touchOnlyDevice {
       pointer-events: none;
     }
   }
-}
-
-// TASK TITLE
-.task-title {
-  @include taskTitle;
 }
 
 @mixin timeWrapperMinimalStyles() {
@@ -495,6 +406,25 @@
     white-space: nowrap;
   }
 
+  .time-val {
+    mat-icon {
+      display: inline-flex;
+      vertical-align: middle;
+      height: 16px;
+      margin-right: 2px;
+      margin-top: -2px;
+
+      @include mq(xs, max) {
+        margin-right: 2px;
+        height: 14px;
+      }
+    }
+
+    span:not(:last-child) {
+      margin-right: 2px;
+    }
+  }
+
   .separator {
     padding: 0 $s * 0.5;
   }
@@ -561,6 +491,17 @@
 
   &:hover {
     opacity: 1 !important;
+    mat-icon {
+      animation: $transition-duration-m success-btn-ani linear;
+    }
+
+    .check {
+      display: none;
+    }
+
+    .undo {
+      display: block;
+    }
   }
 
   mat-icon {
@@ -572,20 +513,6 @@
 
     &.undo {
       display: none;
-    }
-  }
-
-  &:hover {
-    mat-icon {
-      animation: $transition-duration-m success-btn-ani linear;
-    }
-
-    .check {
-      display: none;
-    }
-
-    .undo {
-      display: block;
     }
   }
 }
@@ -631,6 +558,7 @@ progress-bar {
 // BUTTON STYLES AND DRAG HANDLE
 // -----------------------------
 .toggle-sub-tasks-btn,
+.first-line ::ng-deep .ico-btn,
 .first-line .ico-btn {
   $task-button-spacer: 1px;
   margin: 0 $task-button-spacer;
@@ -677,10 +605,12 @@ progress-bar {
 
   // fixes drag and drop on mobile
   touch-action: none;
+  pointer-events: all;
 
   @include grabCursor();
 
   > * {
+    pointer-events: none;
     position: absolute;
     left: 50%;
     top: 50%;
@@ -697,22 +627,14 @@ progress-bar {
     justify-content: center;
     align-items: center;
 
-    //.first-line:hover & {
-    //  opacity: .7;
-    //}
+    @include mq(xs, max) {
+      display: none;
+    }
 
     :host.isCurrent &::ng-deep mat-icon {
       transform: scale(1.4) !important;
       transform-origin: center center;
       opacity: 0.18;
-    }
-
-    @include mq(xs, max) {
-      display: none;
-    }
-
-    a {
-      opacity: 1;
     }
   }
 
@@ -752,7 +674,7 @@ progress-bar {
 }
 
 $this-play-size: 22px;
-
+//
 .play-icon-indicator {
   position: absolute;
   top: 50%;
@@ -767,15 +689,16 @@ $this-play-size: 22px;
   line-height: $this-play-size;
   opacity: 1 !important;
   z-index: 3;
+  pointer-events: none;
 
   @include mq(xs) {
     margin-top: 0;
     //left: 10px;
   }
 
-  .first-line:hover & {
-    display: none;
-  }
+  //.first-line:hover & {
+  //  display: none;
+  //}
 }
 
 .ico-btn {
@@ -806,20 +729,23 @@ $this-play-size: 22px;
 
 .toggle-sub-tasks-btn.toggle-sub-tasks-btn {
   position: absolute !important;
+  // overwrite any lower values set elsewhere
+  opacity: 1;
   transform: translateY(-50%);
   left: -24px;
   top: 50%;
   z-index: $z-toggle-sub-task-btn !important;
   min-width: 0;
   min-height: 0;
-  width: 32px;
-  height: 32px;
+  width: 32px !important;
+  height: 32px !important;
   margin-top: -1px !important;
   transform-origin: left top;
   transition-property: all;
+  box-shadow: $whiteframe-shadow-1dp;
 
   :host-context(.isNoTouchOnly) & {
-    opacity: 0;
+    //opacity: 0;
   }
 
   :host:hover & {
@@ -828,7 +754,6 @@ $this-play-size: 22px;
 
   mat-icon {
     transition: $transition-standard;
-    margin-top: -4px;
     opacity: $task-icon-default-opacity;
 
     &.isHideDoneTasks {
@@ -841,7 +766,6 @@ $this-play-size: 22px;
 .show-additional-info-btn {
   mat-icon {
     transition: transform $transition-standard;
-    backface-visibility: hidden;
   }
 }
 
@@ -883,6 +807,7 @@ $this-play-size: 22px;
 }
 
 $min-badge-size: $s * 2.25;
+
 .mini-badge {
   line-height: $min-badge-size;
   width: $min-badge-size;
@@ -902,13 +827,6 @@ $min-badge-size: $s * 2.25;
   padding-top: $s * 0.5;
   margin-bottom: -2px;
 
-  .dot {
-    height: 8px;
-    width: 8px;
-    border-radius: 50%;
-    margin-right: $s * 0.5;
-  }
-
   .title {
     font-size: 12px;
     text-overflow: ellipsis;
@@ -926,7 +844,7 @@ $min-badge-size: $s * 2.25;
   transform: translate(-50%, -50%);
   top: 50%;
   margin-top: 10px;
-  font-size: 13px;
+  font-size: 12px;
   z-index: 10;
   line-height: 1;
   text-align: center;
@@ -934,6 +852,7 @@ $min-badge-size: $s * 2.25;
   border: 1px solid $light-theme-extra-border-color;
   background: #fff;
   border-radius: $card-border-radius;
+  white-space: nowrap;
 
   // avoid affecting drag handle
   pointer-events: none;
@@ -941,5 +860,16 @@ $min-badge-size: $s * 2.25;
   @include darkTheme() {
     border-color: $dark-theme-extra-border-color;
     background: $dark-theme-bg-lighter;
+  }
+
+  ::ng-deep span {
+    font-size: 10px;
+  }
+}
+
+@media (min-width: $layout-sm) and (max-width: #{-1 + $layout-xl }) {
+  .closeBtn {
+    min-width: 40px;
+    margin-right: -29px !important;
   }
 }

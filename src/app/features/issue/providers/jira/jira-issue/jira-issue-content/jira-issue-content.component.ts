@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, Input } from '@angular/core';
+import { ChangeDetectionStrategy, Component, Input, inject } from '@angular/core';
 import { TaskWithSubTasks } from '../../../../../tasks/task.model';
 import { JiraIssue, JiraRelatedIssue, JiraSubtask } from '../jira-issue.model';
 import { expandAnimation } from '../../../../../../ui/animations/expand.ani';
@@ -6,11 +6,22 @@ import { TaskAttachment } from '../../../../../tasks/task-attachment/task-attach
 import { T } from '../../../../../../t.const';
 import { TaskService } from '../../../../../tasks/task.service';
 // @ts-ignore
-import * as j2m from 'jira2md';
+import j2m from 'jira2md';
 import { combineLatest, forkJoin, Observable, of, ReplaySubject, Subject } from 'rxjs';
-import { map, switchMap } from 'rxjs/operators';
+import { catchError, map, switchMap } from 'rxjs/operators';
 import { JiraCommonInterfacesService } from '../../jira-common-interfaces.service';
 import { devError } from '../../../../../../util/dev-error';
+import { assertTruthy } from '../../../../../../util/assert-truthy';
+import { MatButton, MatAnchor } from '@angular/material/button';
+import { MatChipListbox, MatChipOption } from '@angular/material/chips';
+import { MarkdownComponent, MarkdownPipe } from 'ngx-markdown';
+import { MatIcon } from '@angular/material/icon';
+import { AsyncPipe, DatePipe } from '@angular/common';
+import { JiraToMarkdownPipe } from '../../../../../../ui/pipes/jira-to-markdown.pipe';
+import { MsToStringPipe } from '../../../../../../ui/duration/ms-to-string.pipe';
+import { SortPipe } from '../../../../../../ui/pipes/sort.pipe';
+import { TranslatePipe } from '@ngx-translate/core';
+import { SnackService } from '../../../../../../core/snack/snack.service';
 
 interface JiraSubtaskWithUrl extends JiraSubtask {
   href: string;
@@ -22,8 +33,27 @@ interface JiraSubtaskWithUrl extends JiraSubtask {
   styleUrls: ['./jira-issue-content.component.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush,
   animations: [expandAnimation],
+  imports: [
+    MatButton,
+    MatChipListbox,
+    MatChipOption,
+    MarkdownComponent,
+    MatAnchor,
+    MatIcon,
+    AsyncPipe,
+    DatePipe,
+    JiraToMarkdownPipe,
+    MsToStringPipe,
+    SortPipe,
+    TranslatePipe,
+    MarkdownPipe,
+  ],
 })
 export class JiraIssueContentComponent {
+  private readonly _taskService = inject(TaskService);
+  private readonly _snackService = inject(SnackService);
+  private readonly _jiraCommonInterfacesService = inject(JiraCommonInterfacesService);
+
   description?: string;
   attachments?: TaskAttachment[];
   T: typeof T = T;
@@ -35,8 +65,8 @@ export class JiraIssueContentComponent {
   issueUrl$: Observable<string> = this._task$.pipe(
     switchMap((task) =>
       this._jiraCommonInterfacesService.issueLink$(
-        task.issueId as string,
-        task.projectId as string,
+        assertTruthy(task.issueId),
+        assertTruthy(task.issueProviderId),
       ),
     ),
   );
@@ -47,15 +77,24 @@ export class JiraIssueContentComponent {
     switchMap(([task, issue]) =>
       issue.subtasks?.length
         ? forkJoin(
-            ...issue.subtasks.map((ist: any) => {
+            ...issue.subtasks.map((ist: JiraSubtask) => {
               return this._jiraCommonInterfacesService
-                .issueLink$(ist.key as string, task.projectId as string)
+                .issueLink$(assertTruthy(ist.id), assertTruthy(task.issueProviderId))
                 .pipe(
                   map((issueUrl) => ({
                     ...ist,
                     href: issueUrl,
                   })),
                 );
+            }),
+          ).pipe(
+            catchError((e) => {
+              console.error(e);
+              this._snackService.open({
+                type: 'ERROR',
+                msg: 'Failed to load subtasks for Jira Issue',
+              });
+              return of(undefined);
             }),
           )
         : of(undefined),
@@ -71,7 +110,7 @@ export class JiraIssueContentComponent {
         ? forkJoin(
             ...issue.relatedIssues.map((ist: any) => {
               return this._jiraCommonInterfacesService
-                .issueLink$(ist.key as string, task.projectId as string)
+                .issueLink$(assertTruthy(ist.key), assertTruthy(task.issueProviderId))
                 .pipe(
                   map((issueUrl) => ({
                     ...ist,
@@ -84,11 +123,8 @@ export class JiraIssueContentComponent {
     ),
   );
 
-  constructor(
-    private readonly _taskService: TaskService,
-    private readonly _jiraCommonInterfacesService: JiraCommonInterfacesService,
-  ) {}
-
+  // TODO: Skipped for migration because:
+  //  Accessor inputs cannot be migrated as they are too complex.
   @Input('issue') set issueIn(i: JiraIssue) {
     this.issue = i;
     this._issue$.next(i);
@@ -101,6 +137,8 @@ export class JiraIssueContentComponent {
     }
   }
 
+  // TODO: Skipped for migration because:
+  //  Accessor inputs cannot be migrated as they are too complex.
   @Input('task') set taskIn(v: TaskWithSubTasks) {
     this.task = v;
     this._task$.next(v);

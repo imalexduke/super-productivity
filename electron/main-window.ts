@@ -9,14 +9,15 @@ import {
   shell,
 } from 'electron';
 import { errorHandlerWithFrontendInform } from './error-handler-with-frontend-inform';
+import * as path from 'path';
 import { join, normalize } from 'path';
 import { format } from 'url';
 import { IPC } from './shared-with-frontend/ipc-events.const';
 import { getSettings } from './get-settings';
 import { readFileSync, stat } from 'fs';
-import { error, log } from 'electron-log';
+import { error, log } from 'electron-log/main';
 import { GlobalConfigState } from '../src/app/features/config/global-config.model';
-import { enable as enableRemote } from '@electron/remote/main';
+import { IS_MAC } from './common.const';
 
 let mainWin: BrowserWindow;
 
@@ -42,14 +43,12 @@ export const getIsAppReady = (): boolean => {
 export const createWindow = ({
   IS_DEV,
   ICONS_FOLDER,
-  IS_MAC,
   quitApp,
   app,
   customUrl,
 }: {
   IS_DEV: boolean;
   ICONS_FOLDER: string;
-  IS_MAC: boolean;
   quitApp: () => void;
   app: App;
   customUrl?: string;
@@ -82,28 +81,61 @@ export const createWindow = ({
     webPreferences: {
       scrollBounce: true,
       backgroundThrottling: false,
-      webSecurity: !IS_DEV,
-      nodeIntegration: true,
+      webSecurity: false,
+      preload: path.join(__dirname, 'preload.js'),
+      nodeIntegration: false,
       // make remote module work with those two settings
-      contextIsolation: false,
+      contextIsolation: true,
     },
     icon: ICONS_FOLDER + '/icon_256x256.png',
   });
 
-  // enable remote module
-  enableRemote(mainWin.webContents);
+  // see: https://pratikpc.medium.com/bypassing-cors-with-electron-ab7eaf331605
+  mainWin.webContents.session.webRequest.onBeforeSendHeaders((details, callback) => {
+    const { requestHeaders } = details;
+    removeKeyInAnyCase(requestHeaders, 'Origin');
+    removeKeyInAnyCase(requestHeaders, 'Referer');
+    removeKeyInAnyCase(requestHeaders, 'Cookie');
+    removeKeyInAnyCase(requestHeaders, 'sec-ch-ua');
+    removeKeyInAnyCase(requestHeaders, 'sec-ch-ua-mobile');
+    removeKeyInAnyCase(requestHeaders, 'sec-ch-ua-platform');
+    removeKeyInAnyCase(requestHeaders, 'sec-fetch-dest');
+    removeKeyInAnyCase(requestHeaders, 'sec-fetch-mode');
+    removeKeyInAnyCase(requestHeaders, 'sec-fetch-site');
+    removeKeyInAnyCase(requestHeaders, 'accept-encoding');
+    removeKeyInAnyCase(requestHeaders, 'accept-language');
+    removeKeyInAnyCase(requestHeaders, 'priority');
+    removeKeyInAnyCase(requestHeaders, 'accept');
+
+    // NOTE this is needed for GitHub api requests to work :(
+    if (!details.url.includes('github.com')) {
+      removeKeyInAnyCase(requestHeaders, 'User-Agent');
+    }
+    callback({ requestHeaders });
+  });
+
+  mainWin.webContents.session.webRequest.onHeadersReceived((details, callback) => {
+    const { responseHeaders } = details;
+    upsertKeyValue(responseHeaders, 'Access-Control-Allow-Origin', ['*']);
+    upsertKeyValue(responseHeaders, 'Access-Control-Allow-Headers', ['*']);
+    upsertKeyValue(responseHeaders, 'Access-Control-Allow-Methods', ['*']);
+
+    callback({
+      responseHeaders,
+    });
+  });
 
   mainWindowState.manage(mainWin);
 
   const url = customUrl
     ? customUrl
     : IS_DEV
-    ? 'http://localhost:4200'
-    : format({
-        pathname: normalize(join(__dirname, '../dist/index.html')),
-        protocol: 'file:',
-        slashes: true,
-      });
+      ? 'http://localhost:4200'
+      : format({
+          pathname: normalize(join(__dirname, '../dist/browser/index.html')),
+          protocol: 'file:',
+          slashes: true,
+        });
 
   mainWin.loadURL(url).then(() => {
     // load custom stylesheet if any
@@ -159,15 +191,17 @@ function initWinEventListeners(app: any): void {
 
   // open new window links in browser
   mainWin.webContents.on('will-navigate', (ev, url) => {
-    ev.preventDefault();
-    openUrlInBrowser(url);
+    if (!url.includes('localhost')) {
+      ev.preventDefault();
+      openUrlInBrowser(url);
+    }
   });
   mainWin.webContents.setWindowOpenHandler((details) => {
     openUrlInBrowser(details.url);
     return { action: 'deny' };
   });
 
-  // TODO refactor quiting mess
+  // TODO refactor quitting mess
   appCloseHandler(app);
   appMinimizeHandler(app);
 }
@@ -270,13 +304,41 @@ const appCloseHandler = (app: App): void => {
 
 const appMinimizeHandler = (app: App): void => {
   if (!(app as any).isQuiting) {
+    // TODO find reason for the typing error
+    // @ts-ignore
     mainWin.on('minimize', (event: Event) => {
       getSettings(mainWin, (appCfg: GlobalConfigState) => {
         if (appCfg.misc.isMinimizeToTray) {
           event.preventDefault();
           mainWin.hide();
+        } else if (IS_MAC) {
+          app.dock.show();
         }
       });
     });
+  }
+};
+
+const upsertKeyValue = <T>(obj: T, keyToChange: string, value: string[]): T => {
+  const keyToChangeLower = keyToChange.toLowerCase();
+  for (const key of Object.keys(obj)) {
+    if (key.toLowerCase() === keyToChangeLower) {
+      // Reassign old key
+      obj[key] = value;
+      // Done
+      return;
+    }
+  }
+  // Insert at end instead
+  obj[keyToChange] = value;
+};
+
+const removeKeyInAnyCase = <T>(obj: T, keyToRemove: string): T => {
+  const keyToRemoveLower = keyToRemove.toLowerCase();
+  for (const key of Object.keys(obj)) {
+    if (key.toLowerCase() === keyToRemoveLower) {
+      delete obj[key];
+      return;
+    }
   }
 };

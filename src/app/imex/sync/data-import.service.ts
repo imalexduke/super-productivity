@@ -1,4 +1,4 @@
-import { Injectable } from '@angular/core';
+import { inject, Injectable } from '@angular/core';
 import { AppDataComplete } from './sync.model';
 import { PersistenceService } from '../../core/persistence/persistence.service';
 import { SnackService } from '../../core/snack/snack.service';
@@ -12,8 +12,6 @@ import { LS } from '../../core/persistence/storage-keys.const';
 import { TranslateService } from '@ngx-translate/core';
 import { GLOBAL_CONFIG_LOCAL_ONLY_FIELDS } from './sync.const';
 import { get, set } from 'object-path';
-import { migrateLegacyAppData } from './migrate-legacy-app-data.util';
-import { isLegacyAppData } from './is-legacy-app-data.util';
 
 // TODO some of this can be done in a background script
 
@@ -21,15 +19,15 @@ import { isLegacyAppData } from './is-legacy-app-data.util';
   providedIn: 'root',
 })
 export class DataImportService {
-  constructor(
-    private _persistenceService: PersistenceService,
-    private _snackService: SnackService,
-    private _reminderService: ReminderService,
-    private _imexMetaService: ImexMetaService,
-    private _dataInitService: DataInitService,
-    private _dataRepairService: DataRepairService,
-    private _translateService: TranslateService,
-  ) {
+  private _persistenceService = inject(PersistenceService);
+  private _snackService = inject(SnackService);
+  private _reminderService = inject(ReminderService);
+  private _imexMetaService = inject(ImexMetaService);
+  private _dataInitService = inject(DataInitService);
+  private _dataRepairService = inject(DataRepairService);
+  private _translateService = inject(TranslateService);
+
+  constructor() {
     this._isCheckForStrayLocalDBBackupAndImport();
   }
 
@@ -67,36 +65,15 @@ export class DataImportService {
       await this._persistenceService.saveBackup();
     }
 
-    let migratedData;
-    if (isLegacyAppData(data)) {
-      if (confirm(this._translateService.instant(T.F.SYNC.C.MIGRATE_LEGACY))) {
-        try {
-          migratedData = migrateLegacyAppData(data);
-        } catch (e) {
-          console.error(e);
-          console.error('Unable to migrate data');
-          migratedData = data;
-        }
-      } else {
-        this._snackService.open({
-          type: 'ERROR',
-          msg: T.F.SYNC.S.ERROR_INVALID_DATA,
-        });
-        return;
-      }
-    } else {
-      migratedData = data;
-    }
-
-    if (isValidAppData(migratedData)) {
-      console.log('isValidAppData', true, migratedData);
+    if (isValidAppData(data)) {
+      console.log('isValidAppData', true, data);
       try {
         const mergedData = isOmitLocalFields
-          ? await this._mergeWithLocalOmittedFields(migratedData)
-          : migratedData;
+          ? await this._mergeWithLocalOmittedFields(data)
+          : data;
 
         // clear database to have a clean one and delete legacy stuff
-        await this._persistenceService.clearDatabaseExceptBackup();
+        await this._persistenceService.clearDatabaseExceptBackupAndLocalOnlyModel();
 
         // save data to database first then load to store from there
         await this._persistenceService.importComplete(mergedData);
@@ -105,24 +82,25 @@ export class DataImportService {
         this._imexMetaService.setDataImportInProgress(false);
         this._snackService.open({ type: 'SUCCESS', msg: T.F.SYNC.S.SUCCESS_IMPORT });
       } catch (e) {
+        console.error(e);
+        await this._importLocalDBBackup();
+        // NOTE: needs to come after otherwise the snack will never show, due to the success snack of the import
         this._snackService.open({
           type: 'ERROR',
           msg: T.F.SYNC.S.ERROR_FALLBACK_TO_BACKUP,
         });
-        console.error(e);
-        await this._importLocalDBBackup();
         this._imexMetaService.setDataImportInProgress(false);
       }
-    } else if (this._dataRepairService.isRepairPossibleAndConfirmed(migratedData)) {
-      const fixedData = this._dataRepairService.repairData(migratedData);
+    } else if (this._dataRepairService.isRepairPossibleAndConfirmed(data)) {
+      const fixedData = this._dataRepairService.repairData(data);
       await this.importCompleteSyncData(fixedData, {
         isBackupReload,
         isSkipStrayBackupCheck: true,
       });
     } else {
-      console.log('isValidAppData', false, migratedData);
+      console.log('isValidAppData', false, data);
       this._snackService.open({ type: 'ERROR', msg: T.F.SYNC.S.ERROR_INVALID_DATA });
-      console.error(migratedData);
+      console.error(data);
       this._imexMetaService.setDataImportInProgress(false);
     }
   }
@@ -130,9 +108,8 @@ export class DataImportService {
   private async _mergeWithLocalOmittedFields(
     newData: AppDataComplete,
   ): Promise<AppDataComplete> {
-    const oldLocalData: AppDataComplete = await this._persistenceService.loadComplete(
-      true,
-    );
+    const oldLocalData: AppDataComplete =
+      await this._persistenceService.loadComplete(true);
     const mergedData = { ...newData };
     GLOBAL_CONFIG_LOCAL_ONLY_FIELDS.forEach((op) => {
       const oldLocalValue = get(oldLocalData.globalConfig, op);

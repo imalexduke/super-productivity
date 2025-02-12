@@ -3,6 +3,7 @@ import {
   Component,
   HostBinding,
   HostListener,
+  inject,
   OnDestroy,
 } from '@angular/core';
 import { expandAnimation } from '../../../ui/animations/expand.ani';
@@ -10,10 +11,8 @@ import { TaskCopy } from '../../tasks/task.model';
 import { Observable, of, Subject } from 'rxjs';
 import { GlobalConfigService } from '../../config/global-config.service';
 import { TaskService } from '../../tasks/task.service';
-import { Router } from '@angular/router';
 import { first, switchMap, take, takeUntil } from 'rxjs/operators';
 import { TaskAttachmentService } from '../../tasks/task-attachment/task-attachment.service';
-import { T } from 'src/app/t.const';
 import { fadeAnimation } from '../../../ui/animations/fade.ani';
 import { IssueService } from '../../issue/issue.service';
 import { Store } from '@ngrx/store';
@@ -26,6 +25,20 @@ import { updateTask } from '../../tasks/store/task.actions';
 import { SimpleCounterService } from '../../simple-counter/simple-counter.service';
 import { SimpleCounter } from '../../simple-counter/simple-counter.model';
 import { FocusModePage } from '../focus-mode.const';
+import { ICAL_TYPE } from '../../issue/issue.const';
+import { TaskTitleComponent } from '../../../ui/task-title/task-title.component';
+import { ProgressCircleComponent } from '../../../ui/progress-circle/progress-circle.component';
+import { MatIconAnchor, MatIconButton } from '@angular/material/button';
+import { MatTooltip } from '@angular/material/tooltip';
+import { MatIcon } from '@angular/material/icon';
+import { InlineMarkdownComponent } from '../../../ui/inline-markdown/inline-markdown.component';
+import { AsyncPipe } from '@angular/common';
+import { MsToMinuteClockStringPipe } from '../../../ui/duration/ms-to-minute-clock-string.pipe';
+import { TranslatePipe } from '@ngx-translate/core';
+import { T } from '../../../t.const';
+import { IssueIconPipe } from '../../issue/issue-icon/issue-icon.pipe';
+import { SimpleCounterButtonComponent } from '../../simple-counter/simple-counter-button/simple-counter-button.component';
+import { TaskAttachmentListComponent } from '../../tasks/task-attachment/task-attachment-list/task-attachment-list.component';
 
 @Component({
   selector: 'focus-mode-main',
@@ -33,8 +46,30 @@ import { FocusModePage } from '../focus-mode.const';
   styleUrls: ['./focus-mode-main.component.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush,
   animations: [expandAnimation, fadeAnimation],
+  imports: [
+    TaskTitleComponent,
+    ProgressCircleComponent,
+    MatIconButton,
+    MatTooltip,
+    MatIcon,
+    MatIconAnchor,
+    InlineMarkdownComponent,
+    TaskAttachmentListComponent,
+    AsyncPipe,
+    MsToMinuteClockStringPipe,
+    TranslatePipe,
+    IssueIconPipe,
+    SimpleCounterButtonComponent,
+  ],
 })
 export class FocusModeMainComponent implements OnDestroy {
+  readonly simpleCounterService = inject(SimpleCounterService);
+  private readonly _globalConfigService = inject(GlobalConfigService);
+  readonly taskService = inject(TaskService);
+  private readonly _taskAttachmentService = inject(TaskAttachmentService);
+  private readonly _issueService = inject(IssueService);
+  private readonly _store = inject(Store);
+
   timeToGo$ = this._store.select(selectFocusSessionTimeToGo);
   sessionProgress$ = this._store.select(selectFocusSessionProgress);
 
@@ -52,8 +87,8 @@ export class FocusModeMainComponent implements OnDestroy {
       if (!v) {
         return of(null);
       }
-      return v.issueType && v.issueId && v.projectId
-        ? this._issueService.issueLink$(v.issueType, v.issueId, v.projectId)
+      return v.issueType && v.issueId && v.issueProviderId
+        ? this._issueService.issueLink$(v.issueType, v.issueId, v.issueProviderId)
         : of(null);
     }),
     take(1),
@@ -62,15 +97,7 @@ export class FocusModeMainComponent implements OnDestroy {
   private _onDestroy$ = new Subject<void>();
   private _dragEnterTarget?: HTMLElement;
 
-  constructor(
-    public readonly simpleCounterService: SimpleCounterService,
-    private readonly _globalConfigService: GlobalConfigService,
-    public readonly taskService: TaskService,
-    private readonly _router: Router,
-    private readonly _taskAttachmentService: TaskAttachmentService,
-    private readonly _issueService: IssueService,
-    private readonly _store: Store,
-  ) {
+  constructor() {
     this._globalConfigService.misc$
       .pipe(takeUntil(this._onDestroy$))
       .subscribe((misc) => (this.defaultTaskNotes = misc.taskNotesTpl));
@@ -162,4 +189,6 @@ export class FocusModeMainComponent implements OnDestroy {
       this.taskService.update(this.task.id, { title: newTitle });
     }
   }
+
+  protected readonly ICAL_TYPE = ICAL_TYPE;
 }

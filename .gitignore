@@ -5,12 +5,14 @@
 /app-builds
 /tmp
 /out-tsc
+/logs
 
 # dependencies
 /node_modules
 
 # IDEs and editors
 /.idea
+android/.idea
 .project
 .classpath
 .c9/
@@ -31,6 +33,8 @@
 .history
 
 # misc
+\\backups
+/backups
 /.angular/cache
 /.sass-cache
 /connect.lock
@@ -43,6 +47,7 @@ testem.log
 chromedriver.log
 e2e-test-results
 e2e/screenshots
+perf-metrics-*.json
 .eslintcache
 
 # System Files
@@ -60,6 +65,7 @@ electron/**/*.js.map
 # mac os deployment
 *.provisionprofile
 *.Xprovisionprofile
+tools/mac-profiles
 all-certs.p12
 mac-cert.tar
 build/electron-builder.appx.yaml

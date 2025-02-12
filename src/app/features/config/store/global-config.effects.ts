@@ -1,24 +1,30 @@
-import { Injectable } from '@angular/core';
+import { Injectable, inject } from '@angular/core';
 import { Actions, createEffect, ofType } from '@ngrx/effects';
 import { filter, tap, withLatestFrom } from 'rxjs/operators';
 import { Store } from '@ngrx/store';
 import { CONFIG_FEATURE_NAME } from './global-config.reducer';
 import { PersistenceService } from '../../../core/persistence/persistence.service';
-import { IPC } from '../../../../../electron/shared-with-frontend/ipc-events.const';
 import { IS_ELECTRON, LanguageCode } from '../../../app.constants';
 import { T } from '../../../t.const';
 import { LanguageService } from '../../../core/language/language.service';
 import { DateService } from 'src/app/core/date/date.service';
 import { SnackService } from '../../../core/snack/snack.service';
-import { ElectronService } from '../../../core/electron/electron.service';
 import { loadAllData } from '../../../root-store/meta/load-all-data.action';
 import { DEFAULT_GLOBAL_CONFIG } from '../default-global-config.const';
-import { ipcRenderer } from 'electron';
 import { KeyboardConfig } from '../keyboard-config.model';
 import { updateGlobalConfigSection } from './global-config.actions';
+import { MiscConfig } from '../global-config.model';
+import { hideSideNav, toggleSideNav } from '../../../core-ui/layout/store/layout.actions';
 
 @Injectable()
 export class GlobalConfigEffects {
+  private _actions$ = inject(Actions);
+  private _persistenceService = inject(PersistenceService);
+  private _languageService = inject(LanguageService);
+  private _dateService = inject(DateService);
+  private _snackService = inject(SnackService);
+  private _store = inject<Store<any>>(Store);
+
   updateConfig$: any = createEffect(
     () =>
       this._actions$.pipe(
@@ -37,12 +43,12 @@ export class GlobalConfigEffects {
     () =>
       this._actions$.pipe(
         ofType(updateGlobalConfigSection),
-        tap(({ sectionKey, sectionCfg }) => {
+        tap(({ sectionKey, sectionCfg, isSkipSnack }) => {
           const isPublicSection = sectionKey.charAt(0) !== '_';
           const isPublicPropUpdated = Object.keys(sectionCfg).find(
             (key) => key.charAt(0) !== '_',
           );
-          if (isPublicPropUpdated && isPublicSection) {
+          if (isPublicPropUpdated && isPublicSection && !isSkipSnack) {
             this._snackService.open({
               type: 'SUCCESS',
               msg: T.F.CONFIG.S.UPDATE_SECTION,
@@ -61,10 +67,7 @@ export class GlobalConfigEffects {
         filter(({ sectionKey, sectionCfg }) => IS_ELECTRON && sectionKey === 'keyboard'),
         tap(({ sectionKey, sectionCfg }) => {
           const keyboardCfg: KeyboardConfig = sectionCfg as KeyboardConfig;
-          (this._electronService.ipcRenderer as typeof ipcRenderer).send(
-            IPC.REGISTER_GLOBAL_SHORTCUTS_EVENT,
-            keyboardCfg,
-          );
+          window.ea.registerGlobalShortcuts(keyboardCfg);
         }),
       ),
     { dispatch: false },
@@ -80,10 +83,7 @@ export class GlobalConfigEffects {
           const keyboardCfg: KeyboardConfig = (
             appDataComplete.globalConfig || DEFAULT_GLOBAL_CONFIG
           ).keyboard;
-          (this._electronService.ipcRenderer as typeof ipcRenderer).send(
-            IPC.REGISTER_GLOBAL_SHORTCUTS_EVENT,
-            keyboardCfg,
-          );
+          window.ea.registerGlobalShortcuts(keyboardCfg);
         }),
       ),
     { dispatch: false },
@@ -98,7 +98,7 @@ export class GlobalConfigEffects {
         filter(({ sectionKey, sectionCfg }) => sectionCfg && (sectionCfg as any).lng),
         tap(({ sectionKey, sectionCfg }) => {
           // eslint-disable-next-line
-          this._languageService.setLng((sectionCfg as any)['lng']);
+          this._languageService.setLng(sectionCfg['lng']);
         }),
       ),
     { dispatch: false },
@@ -125,7 +125,7 @@ export class GlobalConfigEffects {
         // eslint-disable-next-line
         filter(
           ({ sectionKey, sectionCfg }) =>
-            sectionCfg && (sectionCfg as any).startOfNextDay,
+            sectionCfg && !!(sectionCfg as MiscConfig).startOfNextDay,
         ),
         tap(({ sectionKey, sectionCfg }) => {
           // eslint-disable-next-line
@@ -148,15 +148,24 @@ export class GlobalConfigEffects {
     { dispatch: false },
   );
 
-  constructor(
-    private _actions$: Actions,
-    private _persistenceService: PersistenceService,
-    private _electronService: ElectronService,
-    private _languageService: LanguageService,
-    private _dateService: DateService,
-    private _snackService: SnackService,
-    private _store: Store<any>,
-  ) {}
+  toggleNavOnMinimalNavChange$: any = createEffect(
+    () =>
+      this._actions$.pipe(
+        ofType(updateGlobalConfigSection),
+        filter(({ sectionKey, sectionCfg }) => sectionKey === 'misc'),
+        // eslint-disable-next-line
+        filter(
+          ({ sectionKey, sectionCfg }) =>
+            sectionCfg && 'isUseMinimalNav' in (sectionCfg as MiscConfig),
+        ),
+        tap(({ sectionKey, sectionCfg }) => {
+          this._store.dispatch(hideSideNav());
+          this._store.dispatch(toggleSideNav());
+          window.dispatchEvent(new Event('resize'));
+        }),
+      ),
+    { dispatch: false },
+  );
 
   private _saveToLs(
     [action, completeState]: [any, any],

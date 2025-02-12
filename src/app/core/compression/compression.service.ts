@@ -1,14 +1,16 @@
 import { nanoid } from 'nanoid';
-import { Injectable } from '@angular/core';
+import { inject, Injectable } from '@angular/core';
 import { SnackService } from '../snack/snack.service';
 import { T } from '../../t.const';
 
 @Injectable({ providedIn: 'root' })
 export class CompressionService {
+  private readonly _snackService = inject(SnackService);
+
   private _w: Worker;
   private _activeInstances: any = {};
 
-  constructor(private readonly _snackService: SnackService) {
+  constructor() {
     if (typeof (Worker as any) === 'undefined') {
       throw new Error('No web worker support');
     }
@@ -21,28 +23,29 @@ export class CompressionService {
     this._w.addEventListener('error', this._handleError.bind(this));
   }
 
-  async compress(strToHandle: string): Promise<string> {
+  async compressUTF16(strToHandle: string): Promise<string> {
     return this._promisifyWorker({
       type: 'COMPRESS',
       strToHandle,
     });
-  }
-
-  async decompress(strToHandle: string): Promise<string> {
-    return this._promisifyWorker({
-      type: 'DECOMPRESS',
-      strToHandle,
-    });
-  }
-
-  async compressUTF16(strToHandle: string): Promise<string> {
-    return this._promisifyWorker({
-      type: 'COMPRESS_UTF16',
-      strToHandle,
-    });
+    // return strFromU8(compressSync(strToU8(strToHandle)), true);
   }
 
   async decompressUTF16(strToHandle: string): Promise<string> {
+    return this._promisifyWorker({
+      type: 'DECOMPRESS',
+      strToHandle,
+    }).catch((err) => {
+      console.error(err);
+      // TODO remove this fallback
+      return this.decompressUTF16Legacy(strToHandle);
+    });
+    // const decompressed = decompressSync(strToU8(strToHandle, true));
+    // const origText = strFromU8(decompressed);
+    // return origText;
+  }
+
+  async decompressUTF16Legacy(strToHandle: string): Promise<string> {
     return this._promisifyWorker({
       type: 'DECOMPRESS_UTF16',
       strToHandle,

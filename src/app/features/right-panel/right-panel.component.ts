@@ -1,12 +1,23 @@
-import { ChangeDetectionStrategy, Component, Input, OnDestroy } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  inject,
+  input,
+  OnDestroy,
+} from '@angular/core';
 import { combineLatest, Observable, of, Subscription } from 'rxjs';
-import { TaskWithSubTasks } from '../tasks/task.model';
-import { delay, map, switchMap } from 'rxjs/operators';
+import { TaskDetailTargetPanel, TaskWithSubTasks } from '../tasks/task.model';
+import { delay, distinctUntilChanged, map, switchMap } from 'rxjs/operators';
 import { TaskService } from '../tasks/task.service';
 import { LayoutService } from '../../core-ui/layout/layout.service';
 import { slideInFromTopAni } from '../../ui/animations/slide-in-from-top.ani';
 import { slideInFromRightAni } from '../../ui/animations/slide-in-from-right.ani';
-import { taskAdditionalInfoTaskChangeAnimation } from '../tasks/task-additional-info/task-additional-info.ani';
+import { taskDetailPanelTaskChangeAnimation } from '../tasks/task-detail-panel/task-detail-panel.ani';
+import { BetterDrawerContainerComponent } from '../../ui/better-drawer/better-drawer-container/better-drawer-container.component';
+import { IssuePanelComponent } from '../issue-panel/issue-panel.component';
+import { NotesComponent } from '../note/notes/notes.component';
+import { TaskDetailPanelComponent } from '../tasks/task-detail-panel/task-detail-panel.component';
+import { AsyncPipe } from '@angular/common';
 
 @Component({
   selector: 'right-panel',
@@ -14,14 +25,24 @@ import { taskAdditionalInfoTaskChangeAnimation } from '../tasks/task-additional-
   styleUrls: ['./right-panel.component.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush,
   animations: [
-    taskAdditionalInfoTaskChangeAnimation,
+    taskDetailPanelTaskChangeAnimation,
     slideInFromTopAni,
     slideInFromRightAni,
   ],
+  imports: [
+    BetterDrawerContainerComponent,
+    IssuePanelComponent,
+    NotesComponent,
+    TaskDetailPanelComponent,
+    AsyncPipe,
+  ],
 })
 export class RightPanelComponent implements OnDestroy {
+  taskService = inject(TaskService);
+  layoutService = inject(LayoutService);
+
   // NOTE: used for debugging
-  @Input() isAlwaysOver: boolean = false;
+  readonly isAlwaysOver = input<boolean>(false);
 
   // to still display its data when panel is closing
   selectedTaskWithDelayForNone$: Observable<TaskWithSubTasks | null> =
@@ -29,17 +50,45 @@ export class RightPanelComponent implements OnDestroy {
       switchMap((task) => (task ? of(task) : of(null).pipe(delay(200)))),
     );
 
+  panelContent$: Observable<'NOTES' | 'TASK' | 'ADD_TASK_PANEL' | undefined> =
+    combineLatest([
+      this.layoutService.isShowNotes$,
+      this.taskService.selectedTask$,
+      this.layoutService.isShowIssuePanel$,
+    ]).pipe(
+      map(([isShowNotes, selectedTask, isShowAddTaskPanel]) => {
+        if (selectedTask) {
+          return 'TASK';
+        } else if (isShowNotes) {
+          return 'NOTES';
+        } else if (isShowAddTaskPanel) {
+          return 'ADD_TASK_PANEL';
+        }
+        return undefined;
+      }),
+      distinctUntilChanged(),
+    );
+
   isOpen$: Observable<boolean> = combineLatest([
     this.taskService.selectedTask$,
+    this.taskService.taskDetailPanelTargetPanel$,
     this.layoutService.isShowNotes$,
-  ]).pipe(map(([selectedTask, isShowNotes]) => !!(selectedTask || isShowNotes)));
+    this.layoutService.isShowIssuePanel$,
+  ]).pipe(
+    map(
+      ([selectedTask, targetPanel, isShowNotes, isShowAddTaskPanel]) =>
+        !!(selectedTask || isShowNotes || isShowAddTaskPanel) &&
+        targetPanel !== TaskDetailTargetPanel.DONT_OPEN_PANEL,
+    ),
+    distinctUntilChanged(),
+  );
 
   // NOTE: prevents the inner animation from happening file panel is expanding
   isDisableTaskPanelAni = true;
 
   private _subs = new Subscription();
 
-  constructor(public taskService: TaskService, public layoutService: LayoutService) {
+  constructor() {
     this._subs.add(
       this.isOpen$.subscribe((isOpen) => {
         if (!isOpen) {
@@ -66,6 +115,6 @@ export class RightPanelComponent implements OnDestroy {
   }
 
   onClose(): void {
-    this.taskService.focusFirstTaskIfVisible();
+    this.taskService.focusLastFocusedTask();
   }
 }

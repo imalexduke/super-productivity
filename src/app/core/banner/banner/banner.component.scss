@@ -4,6 +4,15 @@ $vertical-button-margin: $s;
 
 :host {
   display: block;
+  position: relative;
+  z-index: $z-banner;
+
+  mat-progress-bar {
+    position: absolute;
+    bottom: 2px;
+    left: 0;
+    right: 0;
+  }
 }
 
 .content-wrapper {

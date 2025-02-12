@@ -1,4 +1,15 @@
 {
+  "ANDROID": {
+    "NOTIFICATIONS": {
+      "SYNC_CONFLICT_MSG": "Graag controleren en kijken wat te doen",
+      "SYNC_CONFLICT_TITLE": "Een synchronisatieconflict is opgetreden"
+    },
+    "PERMANENT_NOTIFICATION_MSGS": {
+      "INITIAL": "App draait op de achtergrond om synchronisatie mogelijk te maken als dit is ingeschakeld",
+      "NO_ACTIVE_TASKS": "Geen actieve taken",
+      "SYNCING": "Synchroniseren"
+    }
+  },
   "APP": {
     "B_INSTALL": {
       "IGNORE": "Negeren",
@@ -86,9 +97,6 @@
         "CALDAV_RESOURCE": "De naam van de CalDav-resource (de kalender)",
         "CALDAV_URL": "CalDav-URL (de basis-URL)",
         "CALDAV_USER": "Uw CalDav-gebruikersnaam",
-        "IS_AUTO_IMPORT_ISSUES": "Voeg automatisch niet-voltooide CalDav-taken toe aan uw backlog",
-        "IS_AUTO_POLL": "Controleer geïmporteerde taken automatisch op wijzigingen",
-        "IS_SEARCH_ISSUES_FROM_CALDAV": "Toon onvoltooide CalDav-taken als suggestie bij het toevoegen van nieuwe taken",
         "IS_TRANSITION_ISSUES_ENABLED": "Voltooi automatisch CalDav-taken na voltooiing van de taak"
       },
       "FORM_SECTION": {
@@ -99,7 +107,7 @@
         "DESCRIPTION": "Omschrijving",
         "LABELS": "Categorieën",
         "MARK_AS_CHECKED": "Markeer updates als aangevinkt",
-        "STATUS": "staat",
+        "STATUS": "Status",
         "SUMMARY": "Samenvatting"
       },
       "S": {
@@ -108,24 +116,107 @@
         "ISSUE_NOT_FOUND": "CalDav: Todo \"{{issueId}}\" lijkt te zijn verwijderd op de server."
       }
     },
+    "CALENDARS": {
+      "BANNER": {
+        "ADD_AS_TASK": "Als Taak toevoegen",
+        "FOCUS_TASK": "Focus Taak",
+        "TXT": "<strong>{{title}}</strong> begint om <strong>{{start}}</strong>!",
+        "TXT_MULTIPLE": "<strong>{{title}}</strong> begint om <strong>{{start}}</strong>!<br> (en {{nrOfOtherBanners}} andere taken zijn verschuldigd)",
+        "TXT_PAST": "<strong>{{title}}</strong> gestart om <strong>{{start}}</strong>!",
+        "TXT_PAST_MULTIPLE": "<strong>{{title}}</strong> gestart om <strong>{{start}}</strong>!<br> (en {{nrOfOtherBanners}} andere taken zijn verschuldigd)"
+      },
+      "S": {
+        "CAL_PROVIDER_ERROR": "Calendar Provider Fout: {{errTxt}}"
+      }
+    },
     "CONFIG": {
       "S": {
         "UPDATE_SECTION": "Bijgewerkte instellingen voor <strong>{{sectionKey}}</strong>"
       }
     },
+    "DOMINA_MODE": {
+      "FORM": {
+        "HELP": "Herhaalt de geconfigureerde zin elke X bij het bijhouden van de tijd voor een taak.",
+        "L_INTERVAL": "Interval om zin te herhalen",
+        "L_TEXT": "Tekst",
+        "L_TEXT_DESCRIPTION": "Bijvoorbeeld: \"Werk aan ${currentTaskTitle}!\"",
+        "TITLE": "Domina Mode"
+      }
+    },
     "DROPBOX": {
       "S": {
         "ACCESS_TOKEN_ERROR": "Dropbox: Onmogelijk om een Access Token van Auth Code te genereren",
-        "ACCESS_TOKEN_GENERATED": "Dropbox: Access Token generated from Auth Code",
+        "ACCESS_TOKEN_GENERATED": "Dropbox: Access Token gegenereerd van Auth Code",
         "AUTH_ERROR": "Dropbox: Ongeldige access token opgegeven",
         "AUTH_ERROR_ACTION": "Token wijzigen",
         "OFFLINE": "Dropbox: Kan niet worden gesynchroniseerd, vanwege offline",
-        "SYNC_ERROR": "Dropbox: Fout tijdens her synchroniseren"
+        "SYNC_ERROR": "Dropbox: Fout tijdens her synchroniseren",
+        "UNABLE_TO_GENERATE_PKCE_CHALLENGE": "Dropbox: Onmogelijk om PKCE uitdaging te genereren."
       }
     },
     "FINISH_DAY_BEFORE_EXIT": {
       "C": {
         "FINISH_DAY_BEFORE_EXIT": "Er zijn {{nr}} voltooide taken in uw lijst van vandaag die nog niet naar het archief zijn verplaatst. Wil je echt stoppen zonder je dag af te maken?"
+      }
+    },
+    "FOCUS_MODE": {
+      "BACK_TO_PLANNING": "Terug naar Planning",
+      "CANCEL_FOCUS_SESSION": "Focus Sessie Annuleren",
+      "CONGRATS": "Gefeliciteerd met het afronden van deze sessie!",
+      "CONTINUE_FOCUS_SESSION": "Focus Sessie Voortzetten",
+      "FINISH_TASK_AND_SELECT_NEXT": "Taak afmaken en volgende selecteren",
+      "GET_READY": "Maak je klaar voor je focus sessie!",
+      "GO_TO_PROCRASTINATION": "Krijg hulp als je aan het uitstellen bent",
+      "GOGOGO": "Go, go, go!!!",
+      "NEXT": "Volgende",
+      "ON": "aan",
+      "OPEN_ISSUE_IN_BROWSER": "Issue in Browser openen",
+      "POMODORO_BACK": "Terug",
+      "POMODORO_DISABLE": "Pomodoro uitschakelen",
+      "POMODORO_INFO": "Focus sessies kunnen niet tegelijk gebruikt worden met pomodoro timer ingeschakeld.",
+      "PREP_GET_MENTALLY_READY": "Bereid je mentaal voor om gefocust en productief te zijn",
+      "PREP_SIT_UPRIGHT": "Zit (of sta) rechtop",
+      "PREP_STRETCH": "Doe wat lichte stretches",
+      "SELECT_ANOTHER_TASK": "Selecteer een andere Taak",
+      "SELECT_TASK": "Selecteer een Taak om op te focussen",
+      "SET_FOCUS_SESSION_DURATION": "Selecteer een Focus Sessie duur",
+      "SHOW_HIDE_NOTES_AND_ATTACHMENTS": "Taaknotities en bijlagen tonen/verbergen",
+      "START_FOCUS_SESSION": "Start Focus Sessie",
+      "START_NEXT_FOCUS_SESSION": "Start volgende Focus Sessie",
+      "WORKED_FOR": "Je hebt gewerkt voor"
+    },
+    "GITEA": {
+      "DIALOG_INITIAL": {
+        "TITLE": "Configureer Gitea voor Project"
+      },
+      "FORM": {
+        "FILTER_USER": "Gebruikersnaam (bijv. om wijzigingen zelf te filteren)",
+        "HOST": "Host (bijv. https://try.gitea.io)",
+        "REPO_FULL_NAME": "Gebruikersnaam of Organisatie naam/project",
+        "REPO_FULL_NAME_DESCRIPTION": "Kan gevonden worden in deel van de URL, wanneer je het project open hebt in de Browser",
+        "SCOPE": "Toepassingsgebied",
+        "SCOPE_ALL": "Alle",
+        "SCOPE_ASSIGNED": "Aan mij toegewezen",
+        "SCOPE_CREATED": "Aangemaakt door mij",
+        "TOKEN": "Access Token"
+      },
+      "FORM_SECTION": {
+        "HELP": "<p>Hier kun je SuperProductivity configureren om open Gitea kwesties voor een specifieke repository te tonen in het paneel voor het aanmaken van taken in de dagelijkse planningsweergave. Ze worden weergegeven als suggesties en geven een link naar het issue en meer informatie over het issue.</p> <p>Daarnaast kun je automatisch alle openstaande issues toevoegen en importeren.</p><p>Om de gebruikslimieten te omzeilen en toegang te krijgen kun je een toegangstoken geven.",
+        "TITLE": "Gitea"
+      },
+      "ISSUE_CONTENT": {
+        "ASSIGNEE": "Geadresseerde",
+        "AT": "op",
+        "DESCRIPTION": "Omschrijving",
+        "LABELS": "Labels",
+        "MARK_AS_CHECKED": "Markeer wijzigingen als gecontroleerd",
+        "PROJECT": "Project",
+        "STATUS": "Status",
+        "SUMMARY": "Samenvatting",
+        "WRITE_A_COMMENT": "Schrijf een opmerking"
+      },
+      "S": {
+        "ERR_UNKNOWN": "Gitea: Onbekende fout {{statusCode}} {{errorMsg}}. Api Rate limiet overschreden?"
       }
     },
     "GITHUB": {
@@ -134,12 +225,10 @@
       },
       "FORM": {
         "FILTER_USER": "Gebruikersnaam (bijv. Om wijzigingen zelf uit te filteren)",
-        "IS_AUTO_IMPORT_ISSUES": "Voeg automatisch onopgeloste problemen van GitHub toe aan de backlog",
-        "IS_AUTO_POLL": "Poll automatisch geïmporteerde git-problemen voor wijzigingen",
-        "IS_SEARCH_ISSUES_FROM_GITHUB": "Toon problemen van git als suggesties bij het toevoegen van nieuwe taken",
+        "INVALID_TOKEN_MESSAGE": "Geen geldig GitHub token. Het moet beginnen met \"ghp_\".",
+        "IS_ASSIGNEE_FILTER": "Importeer alleen problemen die aan mij zijn toegewezen naar de achterstand",
         "REPO": "\"gebruikersnaam/repositoryName\" voor de git repository die je wilt volgen",
-        "TOKEN": "Toegangstoken",
-        "TOKEN_DESCRIPTION": "Vereist voor toegang tot privérepository"
+        "TOKEN": "Toegangstoken"
       },
       "FORM_SECTION": {
         "HELP": "<p>Hier kunt u SuperProductivity configureren om openstaande GitHub-problemen voor een specifieke repository weer te geven in het paneel voor het maken van taken in de dagelijkse planningsweergave. Ze worden vermeld als suggesties en bieden een link naar het probleem en meer informatie erover.</p> <p>Daarnaast kunt u automatisch alle openstaande problemen toevoegen en synchroniseren met uw backlog.</p>",
@@ -150,12 +239,16 @@
         "AT": "Bij",
         "DESCRIPTION": "Omschrijving",
         "LABELS": "Etiketten",
+        "LAST_COMMENT": "Laatste opmerking",
+        "LOAD_ALL_COMMENTS": "Laad alle {{nr}} opmerkingen",
+        "LOAD_DESCRIPTION_AND_ALL_COMMENTS": "Laad opmerkingen & alle opmerkingen",
         "MARK_AS_CHECKED": "Markeer updates als aangevinkt",
         "STATUS": "Toestand",
         "SUMMARY": "Overzicht",
         "WRITE_A_COMMENT": "Schrijf een reactie"
       },
       "S": {
+        "CONFIG_ERROR": "GitHub: Fout tijdens het mappen van gegevens. Is je repositorynaam correct?",
         "ERR_UNKNOWN": "GitHub: onbekende fout {{statusCode}} {{errorMsg}}. API-limiet overschreden?"
       }
     },
@@ -163,13 +256,21 @@
       "DIALOG_INITIAL": {
         "TITLE": "GitLab instellen voor Project"
       },
+      "DIALOG_SUBMIT_WORKLOG": {
+        "PAST_DAY_INFO": "De vooraf ingevulde duur bevat niet-traceerbare gegevens van de afgelopen dagen.",
+        "T_ALREADY_TRACKED": "Reeds gevolgd",
+        "T_TITLE": "Titel",
+        "T_TO_BE_SUBMITTED": "In te dienen",
+        "TITLE": "Tijd besteed aan issues aan GitLab doorgeven",
+        "TOTAL_MSG": "Je zult <em>{{totalTimeToSubmit}}</em> werktijd voor vandaag in totaal aan <em>{{nrOfTasksToSubmit}}</em> verschillende onderwerpen."
+      },
       "FORM": {
+        "FILTER": "Aangepast filter",
+        "FILTER_DESCRIPTION": "Zie https://docs.gitlab.com/ee/api/issues.html#list-issues. Meerdere kunnen worden gecombineerd door &",
         "FILTER_USER": "Gebruikersnaam (bijv. Om wijzigingen zelf uit te filteren)",
         "GITLAB_BASE_URL": "Aangepaste GitLab base URL",
-        "IS_AUTO_IMPORT_ISSUES": "Voeg automatisch onopgeloste problemen van GitLab toe aan de backlog",
-        "IS_AUTO_POLL": "Poll automatisch geïmporteerde git-problemen voor wijzigingen",
-        "IS_SEARCH_ISSUES_FROM_GITLAB": "Toon problemen van git als suggesties bij het toevoegen van nieuwe taken",
         "PROJECT": "Volledig pad of gebruikersnaam / project",
+        "PROJECT_HINT": "bijv. johannesjo/superproductiviteit",
         "SCOPE": "strekking",
         "SCOPE_ALL": "Allemaal",
         "SCOPE_ASSIGNED": "Toegewezen aan mij",
@@ -178,6 +279,8 @@
         "SOURCE_GLOBAL": "Allemaal",
         "SOURCE_GROUP": "Groep",
         "SOURCE_PROJECT": "project",
+        "SUBMIT_TIMELOGS": "Tijdlogs aan Gitlab toevoegen",
+        "SUBMIT_TIMELOGS_DESCRIPTION": "Tijdregistratiedialoogvenster tonen na klikken op einddag",
         "TOKEN": "Toegangstoken"
       },
       "FORM_SECTION": {
@@ -199,32 +302,17 @@
         "ERR_UNKNOWN": "GitLab: onbekende fout {{statusCode}} {{errorMsg}}"
       }
     },
-    "GOOGLE": {
-      "BANNER": {
-        "AUTH_FAIL": "GoogleApi: kan niet worden geverifieerd, probeer opnieuw in te loggen!"
-      },
-      "DIALOG": {
-        "CREATE_SYNC_FILE": "Google Drive: er is geen bestand gevonden met de naam <strong>\"{{fileName}}\"</strong> . <strong>Maak</strong> het als synchronisatiebestand op Google Drive?",
-        "USE_EXISTING_SYNC_FILE": "Google Drive: gebruik je <strong>bestaand</strong> bestand <strong>\"{{fileName}}\"</strong> als synchronisatiebestand? Zo niet, wijzig dan de naam van het synchronisatiebestand."
-      },
-      "S": {
-        "MULTIPLE_SYNC_FILES_WITH_SAME_NAME": "Meerdere bestanden met de naam \"{{newFileName}}\" gevonden. Verwijder alle op één na of kies een andere naam.",
-        "SYNC_FILE_CREATION_ERROR": "Google Drive: fout bij het maken van een synchronisatiebestand. {{err}}",
-        "UPDATED_SYNC_FILE_NAME": "Google Drive: bijgewerkte naam van synchronisatiebestand"
-      },
-      "S_API": {
-        "ERR": "GoogleApi-fout: {{errStr}}",
-        "ERR_NO_FILE_ID": "GoogleApi: geen bestands-ID opgegeven",
-        "ERR_NO_FILE_NAME": "GoogleApi: geen bestandsnaam opgegeven",
-        "SUCCESS_LOGIN": "GoogleApi: inloggen geslaagd"
-      }
-    },
     "ISSUE": {
+      "CROSS_ORIGIN_BROWSER_WARNING": "Deze integratie werkt waarschijnlijk niet in uw browser. Download de desktop- of Android-versie van Super Productivity!",
       "DEFAULT": {
-        "ISSUES_STR": "Problemen",
-        "ISSUE_STR": "Kwestie"
+        "ISSUE_STR": "Kwestie",
+        "ISSUES_STR": "Problemen"
       },
+      "DEFAULT_PROJECT_DESCRIPTION": "Project toegewezen aan taken die zijn aangemaakt vanuit issues.",
+      "DEFAULT_PROJECT_LABEL": "Standaard Superproductiviteitsproject",
+      "HOW_TO_GET_A_TOKEN": "Hoe krijg ik een token?",
       "S": {
+        "ERR_GENERIC": "{{issueProviderName}} Fout: {{errTxt}}",
         "ERR_NETWORK": "{{issueProviderName}}: Verzoek is mislukt vanwege een netwerkfout aan de clientzijde",
         "ERR_NOT_CONFIGURED": "{{issueProviderName}}: Niet goed geconfigureerd",
         "IMPORTED_MULTIPLE_ISSUES": "{{issueProviderName}}: {{nr}} nieuw {{issuesStr}} geïmporteerd naar achterstand",
@@ -247,8 +335,8 @@
       },
       "CFG_CMP": {
         "ALWAYS_ASK": "Dialoog altijd openen",
-        "DONE": "Status voor het voltooien van de taak",
         "DO_NOT": "Overgang niet",
+        "DONE": "Status voor het voltooien van de taak",
         "ENABLE": "Schakel Jira-integratie in",
         "ENABLE_TRANSITIONS": "Schakel overgangsafhandeling in",
         "IN_PROGRESS": "Status voor starttaak",
@@ -257,7 +345,8 @@
         "MAP_CUSTOM_FIELDS_INFO": "Helaas worden sommige gegevens van Jira opgeslagen in aangepaste velden die voor elke installatie anders zijn. Als u deze gegevens wilt opnemen, moet u daarvoor het juiste aangepaste veld selecteren.",
         "OPEN": "Status voor het onderbreken van een taak",
         "SELECT_ISSUE_FOR_TRANSITIONS": "Selecteer probleem om beschikbare overgangen te laden",
-        "STORY_POINTS": "Verhaalpunten"
+        "STORY_POINTS": "Verhaalpunten",
+        "TRANSITION": "Overgangsbehandeling"
       },
       "DIALOG_CONFIRM_ASSIGNMENT": {
         "MSG": "<strong>{{summary}}</strong> is momenteel toegewezen aan <strong>{{assignee}}</strong>. Wil je het aan jezelf toewijzen?",
@@ -290,17 +379,9 @@
         "TIME_SPENT_TOOLTIP": "Voeg verschillende tijden toe",
         "TITLE": "Jira: Werklogboek indienen"
       },
-      "FORM": {
-        "IS_AUTO_IMPORT_ISSUES": "Voeg automatisch onopgeloste problemen van GitHub toe aan de backlog",
-        "IS_AUTO_POLL": "Poll automatisch geïmporteerde git-problemen voor wijzigingen",
-        "IS_SEARCH_ISSUES_FROM_GITHUB": "Toon problemen van git als suggesties bij het toevoegen van nieuwe taken",
-        "REPO": "\"gebruikersnaam/repositoryName\" voor de git repository die je wilt volgen"
-      },
       "FORM_ADV": {
         "AUTO_ADD_BACKLOG_JQL_QUERY": "JQL gebruikt voor het automatisch toevoegen van taken aan backlog",
         "IS_ADD_WORKLOG_ON_SUB_TASK_DONE": "Open dialoogvenster om werklog naar jira te sturen wanneer de subtaak is voltooid",
-        "IS_AUTO_IMPORT_ISSUES": "Voeg automatisch problemen toe aan de Jira-backlog",
-        "IS_AUTO_POLL_TICKETS": "Controleer geïmporteerde problemen automatisch op wijzigingen en stel ze op de hoogte",
         "IS_CHECK_TO_RE_ASSIGN_TICKET_ON_TASK_START": "Controleer of het probleem waaraan momenteel is gewerkt, is toegewezen aan de huidige gebruiker",
         "IS_WORKLOG_ENABLED": "Open dialoogvenster om werklog naar jira te sturen wanneer de taak is voltooid",
         "SEARCH_JQL_QUERY": "JQL Query voor het beperken van zoektaken",
@@ -314,13 +395,12 @@
         "ALLOW_SELF_SIGNED": "Zelfondertekend certificaat toestaan",
         "HOST": "Host (bijv .: http://my-host.de:1234)",
         "PASSWORD": "Token / wachtwoord",
-        "USER_NAME": "E-mail / gebruikersnaam",
         "USE_PAT": "Persoonlijke toegangstoken gebruiken in plaats van wachtwoord",
+        "USER_NAME": "E-mail / gebruikersnaam",
         "WONKY_COOKIE_MODE": "Wonky Cookie Fallback Authentication (alleen desktop-app)"
       },
       "FORM_SECTION": {
         "ADV_CFG": "Geavanceerde configuratie",
-        "CREDENTIALS": "Inloggegevens",
         "HELP_ARR": {
           "H1": "Basisconfiguratie",
           "H2": "Worklog-instellingen",
@@ -346,8 +426,10 @@
         "LIST_OF_CHANGES": "Lijst met wijzigingen",
         "MARK_AS_CHECKED": "Markeer updates als aangevinkt",
         "ON": "Aan",
+        "RELATED": "Gerelateerd",
         "STATUS": "Toestand",
         "STORY_POINTS": "Verhaalpunten",
+        "SUB_TASKS": "Subtaken",
         "SUMMARY": "Overzicht",
         "WORKLOG": "Werklogboek",
         "WRITE_A_COMMENT": "Schrijf een reactie"
@@ -364,8 +446,8 @@
         "NO_VALID_TRANSITION": "Jira: Geen geldige overgang geconfigureerd",
         "TIMED_OUT": "Jira: Time-out voor verzoek",
         "TRANSITION": "Jira: Stel probleem \"{{issueKey}}\" in op \"{{name}}\"",
-        "TRANSITIONS_LOADED": "Jira: Overgangen geladen. Gebruik de onderstaande selecties om ze toe te wijzen",
         "TRANSITION_SUCCESS": "Jira: Stel probleem {{issueKey}} in op <strong>{{gekozenTransition}}</strong>",
+        "TRANSITIONS_LOADED": "Jira: Overgangen geladen. Gebruik de onderstaande selecties om ze toe te wijzen",
         "UNABLE_TO_REASSIGN": "Jira: Kan ticket niet opnieuw aan jezelf toewijzen, omdat je geen gebruikersnaam hebt opgegeven. Bezoek de instellingen."
       },
       "STEPPER": {
@@ -425,18 +507,37 @@
       "D_ADD": {
         "NOTE_LABEL": "Voer wat tekst in om op te slaan als notitie ..."
       },
-      "EDIT_FULLSCREEN": "Bewerken in volledig scherm",
+      "D_FULLSCREEN": {
+        "VIEW_PARSED": "Weergeven als geparseerde (niet bewerkbare) markdown",
+        "VIEW_SPLIT": "Geparsed en ongeparsed markdown in gesplitste weergave bekijken",
+        "VIEW_TEXT_ONLY": "Weergeven als niet-uitgestuurde tekst"
+      },
+      "NOTE_CMP": {
+        "DISABLE_PARSE": "Markering-parsering uitschakelen",
+        "ENABLE_PARSE": "Markering ontleden inschakelen"
+      },
       "NOTES_CMP": {
         "ADD_BTN": "Nieuwe notitie toevoegen",
         "DROP_TO_ADD": "Ga hierheen om een nieuwe notitie toe te voegen",
         "NO_NOTES": "Er zijn momenteel geen notities"
       },
-      "NOTE_CMP": {
-        "DISABLE_PARSE": "Markering-parsering uitschakelen",
-        "ENABLE_PARSE": "Markering ontleden inschakelen"
+      "S": {
+        "NOTE_ADDED": "Opmerking opgeslagen"
       }
     },
     "OPEN_PROJECT": {
+      "CFG_CMP": {
+        "ALWAYS_ASK": "Altijd dialoog openen",
+        "DO_NOT": "Geen overgang",
+        "DONE": "Status voor het voltooien van de taak",
+        "ENABLE": "Openproject-integratie inschakelen",
+        "ENABLE_TRANSITIONS": "Overgangshandling inschakelen",
+        "IN_PROGRESS": "Status voor het starten van de taak",
+        "OPEN": "Status voor pauzetaak",
+        "PROGRESS_ON_SAVE": "Standaard voortgang bij opslaan",
+        "SELECT_ISSUE_FOR_TRANSITIONS": "Selecteer kwestie om beschikbare overgangen te laden",
+        "TRANSITION": "Overgangsbehandeling"
+      },
       "DIALOG_INITIAL": {
         "TITLE": "OpenProject voor Project instellen"
       },
@@ -450,22 +551,28 @@
         "TIME_SPENT": "Tijd besteed",
         "TITLE": "OpenProject: werklogboek indienen"
       },
+      "DIALOG_TRANSITION": {
+        "CHOOSE_STATUS": "Kies status om toe te wijzen",
+        "CURRENT_ASSIGNEE": "Huidige cessionaris:",
+        "CURRENT_STATUS": "Huidige Status:",
+        "PERCENTAGE_DONE": "Vooruitgang:",
+        "TASK_NAME": "Taak naam:",
+        "TITLE": "OpenProject: Status Bijwerken",
+        "UPDATE_STATUS": "Status Bijwerken"
+      },
       "FORM": {
         "FILTER_USER": "Gebruikersnaam (bijvoorbeeld om zelf wijzigingen uit te filteren)",
         "HOST": "Host (bijv.: https://www.openproject.org/)",
-        "IS_AUTO_IMPORT_ISSUES": "Automatisch onopgeloste werkpakketten van OpenProject toevoegen aan achterstand",
-        "IS_AUTO_POLL": "Geïmporteerde OpenProject-werkpakketten automatisch op wijzigingen controleren",
-        "IS_SEARCH_ISSUES_FROM_OPEN_PROJECT": "Werkpakketten weergeven als suggesties bij het toevoegen van nieuwe taken",
         "IS_SHOW_TIME_TRACKING_DIALOG": "Dialoogvenster voor tijdregistratie weergeven om te rapporteren aan OpenProject",
         "IS_SHOW_TIME_TRACKING_DIALOG_DESCRIPTION": "Vereist dat de tijdregistratiemodule is ingeschakeld voor het OpenProject-project",
         "IS_SHOW_TIME_TRACKING_DIALOG_FOR_EACH_SUB_TASK": "Dialoogvenster voor tijdregistratie weergeven wanneer subtaken zijn voltooid",
         "PROJECT_ID": "Project-ID",
         "PROJECT_ID_DESCRIPTION": "Kan worden gevonden als onderdeel van de url, bij het bekijken van het project in de browser.",
-        "TOKEN": "Toegangstoken",
         "SCOPE": "strekking",
         "SCOPE_ALL": "Allemaal",
         "SCOPE_ASSIGNED": "Toegewezen aan mij",
-        "SCOPE_CREATED": "Gecreëerd door mij"
+        "SCOPE_CREATED": "Gecreëerd door mij",
+        "TOKEN": "Toegangstoken"
       },
       "FORM_SECTION": {
         "HELP": "<p>Hier kunt u SuperProductivity configureren om open OpenProject-werkpakketten weer te geven. Houd er rekening mee dat om dit in de browser te laten werken, u waarschijnlijk CORS moet configureren voor uw OpenProject-server, om toegang te verlenen vanaf app.super-productivity.com</p>",
@@ -480,13 +587,40 @@
         "TYPE": "Type"
       },
       "ISSUE_STRINGS": {
-        "ISSUES_STR": "Werkpakketten",
-        "ISSUE_STR": "Werkpakket"
+        "ISSUE_STR": "Werkpakket",
+        "ISSUES_STR": "Werkpakketten"
       },
       "S": {
         "ERR_UNKNOWN": "OpenProject: onbekende fout {{statusCode}} {{errorMsg}}. Is CORS correct geconfigureerd voor de server?",
-        "POST_TIME_SUCCESS": "OpenProject: tijdsinvoer voor {{issueTitle}}gemaakt"
+        "POST_TIME_SUCCESS": "OpenProject: tijdsinvoer voor {{issueTitle}}gemaakt",
+        "TRANSITION": "OpenProject: Zet issue \"{{issueKey}}\" op \"{{name}}\"",
+        "TRANSITION_SUCCESS": "OpenProject: Stel issue {{issueKey}} in op <strong>{{chosenTransition}}</strong>",
+        "TRANSITIONS_LOADED": "Overgangen geladen. Gebruik de onderstaande selecties om ze toe te wijzen"
       }
+    },
+    "PLANNER": {
+      "D": {
+        "ADD_PLANNED": {
+          "ADD_TO_TODAY": "Toevoegen aan vandaag",
+          "TITLE": "Geplande taken toevoegen aan Vandaag"
+        },
+        "PLAN_FOR_DAY": {
+          "REMINDER_WARNING": "Dit verwijdert de herinnering van de taak! Druk op Escape om te annuleren.",
+          "REMOVE_PLAN_DATE": "Plangegevens verwijderen",
+          "TITLE": "Plan taak voor de dag"
+        }
+      },
+      "EDIT_REPEATED_TASK": "Herhaalde taak '{{taskName}}' bewerken",
+      "NO_TASKS": "Geen taken",
+      "PLAN_VIEW": {
+        "NO_SCHEDULED_ITEMS": "Geen geplande items"
+      },
+      "S": {
+        "REMOVED_PLAN_DATE": "Plangegevens voor taak '{{taskTitle}}' verwijderd",
+        "TASK_ALREADY_PLANNED": "Taak is al gepland voor {{date}}",
+        "TASK_PLANNED_FOR": "Taak gepland voor <strong>{{date}}</strong>{{extra}}"
+      },
+      "TASK_DRAWER": "Taak lade"
     },
     "POMODORO": {
       "BACK_TO_WORK": "Terug aan het werk!",
@@ -494,14 +628,18 @@
       "ENJOY_YOURSELF": "Geniet ervan, breng jezelf in beweging, kom terug in:",
       "FINISH_SESSION_X": "Sessie <strong>{{nr}}</strong>is succesvol afgerond!",
       "NOTIFICATION": {
+        "BREAK_TIME": "Pomodoro: Tijd voor pauze {{nr}}!",
         "BREAK_X_START": "Pomodoro: Break {{nr}} is begonnen!",
         "NO_TASKS": "Je moet taken toevoegen voordat de Pomodoro-timer kan starten.",
         "SESSION_X_START": "Pomodoro: Sessie {{nr}} is begonnen!"
       },
       "S": {
+        "RESET": "Terugzetten naar eerste Pomodoro-sessie",
+        "SESSION_SKIP": "Naar het einde van de huidige Pomodoro-sessie gaan",
         "SESSION_X_START": "Pomodoro: Sessie {{nr}} is begonnen!"
       },
-      "SKIP_BREAK": "Pauze overslaan"
+      "SKIP_BREAK": "Pauze overslaan",
+      "START_BREAK": "Start pauze"
     },
     "PROCRASTINATION": {
       "BACK_TO_WORK": "Terug aan het werk!",
@@ -521,9 +659,17 @@
         "L3": "Waar herinneren ze je aan?",
         "L4": "Wat gebeurt er met de gedachte van uitstellen terwijl je het observeert? Wordt het intenser? Dissiperen? Veroorzaken andere emoties?",
         "L5": "Hoe veranderen de sensaties in je lichaam terwijl je je bewustzijn erop blijft richten?",
+        "PROCRASTINATION_TRIGGERS_TEXT": "Een andere zeer effectieve methode is om op te nemen wat je drang tot uitstel veroorzaakt. Zelf heb ik bijvoorbeeld vaak de neiging om snel naar reddit of mijn favoriete nieuwssite te springen zodra mijn browservenster in beeld komt. Toen ik begon met het opschrijven van mijn triggers in een eenvoudig leeg tekstdocument, werd ik me ervan bewust hoe ingesleten dit patroon was en het hielp me om te experimenteren met verschillende tegenmaatregelen.",
+        "PROCRASTINATION_TRIGGERS_TITLE": "Je uitstelgedrag triggers opschrijven",
         "TITLE": "Nieuwsgierigheid"
       },
       "H1": "Geef jezelf wat ruimte!",
+      "INTRO": {
+        "AVOIDING": "De taak onwijken",
+        "FEAR": "Bang voor falen",
+        "STRESSED": "Gestrest omdat je dingen niet gedaan krijgt",
+        "TITLE": "Introductie"
+      },
       "P1": "Ontspan allereerst! Iedereen doet het af en toe. En als je niet doet wat je moet doen, moet je er in ieder geval van genieten! Bekijk dan de onderstaande secties voor iets nuttigs.",
       "P2": "Onthoud: uitstelgedrag is een probleem met emotieregulatie, geen tijdmanagementprobleem.",
       "REFRAME": {
@@ -545,11 +691,17 @@
         "EDIT": "Project bewerken",
         "SETUP_CALDAV": "Stel Caldav-integratie in",
         "SETUP_GIT": "GitHub-integratie instellen",
+        "SETUP_GITEA_PROJECT": "Configureer Gitea Integratie",
         "SETUP_GITLAB": "GitLab-integratie instellen",
         "SETUP_JIRA": "Jira-integratie instellen",
-        "SETUP_OPEN_PROJECT": "OpenProject-integratie instellen"
+        "SETUP_OPEN_PROJECT": "OpenProject-integratie instellen",
+        "SETUP_REDMINE_PROJECT": "Configureer Redmine Integratie"
+      },
+      "D_DELETE": {
+        "MSG": "Weet je zeker dat je het project \"{{title}}\" wilt verwijderen?"
       },
       "FORM_BASIC": {
+        "L_ENABLE_BACKLOG": "Project Backlog inschakelen",
         "L_IS_HIDDEN_FROM_MENU": "Project verbergen in menu",
         "L_TITLE": "Naam van het project",
         "TITLE": "Basis instellingen"
@@ -588,8 +740,59 @@
       "PAGE_TITLE": "Snelle geschiedenis",
       "WEEK_TITLE": "Week {{nr}} ({{timeSpent}})"
     },
+    "REDMINE": {
+      "DIALOG_INITIAL": {
+        "TITLE": "Configureer Redmine voor Project"
+      },
+      "FORM": {
+        "API_KEY": "API-toegangssleutel",
+        "HOST": "Host (e.g.: https://redmine.org)",
+        "PROJECT_ID": "Project identificatie",
+        "PROJECT_ID_DESCRIPTION": "Kan gevonden worden in deel van de URL, wanneer je het project open hebt in de Browser",
+        "SCOPE": "Omvang",
+        "SCOPE_ALL": "Allemaal",
+        "SCOPE_ASSIGNED": "Aan mij toegewezen",
+        "SCOPE_CREATED": "Aangemaakt door mij"
+      },
+      "FORM_SECTION": {
+        "HELP": "<p>Hier kunt u SuperProductivity configureren om open Redmine (hetzij de online versie of een zelf gehoste instantie) problemen voor een specifiek project te tonen in het taakcreatiepaneel in de dagelijkse planningsweergave. Ze worden weergegeven als suggesties en geven een link naar het probleem en meer informatie erover.</p><p>Daarnaast kun je automatisch alle openstaande kwesties importeren.</p>",
+        "TITLE": "Redmine"
+      },
+      "ISSUE_CONTENT": {
+        "AUTHOR": "Auteur",
+        "DESCRIPTION": "Omschrijving",
+        "MARK_AS_CHECKED": "Markeer wijzigingen als gecontroleerd",
+        "PRIORITY": "Prioriteit",
+        "STATUS": "Status"
+      },
+      "S": {
+        "ERR_UNKNOWN": "Redmine: Onbekende fout {{statusCode}} {{errorMsg}}."
+      }
+    },
     "REMINDER": {
+      "COUNTDOWN_BANNER": {
+        "HIDE": "Verbergen",
+        "START_NOW": "Nu beginnen",
+        "TXT": "<strong>{{title}}</strong> start om <strong>{{start}}</strong>!",
+        "TXT_MULTIPLE": "<strong>{{title}}</strong> start om <strong>{{start}}</strong>!<br> (en {{nrOfOtherBanners}} andere taken verschuldigd)"
+      },
+      "S_ACTIVE_TASK_DUE": "De taak waaraan je momenteel werkt is nu af!<br/> ({{title}})",
       "S_REMINDER_ERR": "Fout voor herinneringsinterface"
+    },
+    "SCHEDULE": {
+      "CONTINUED": "vervolgd",
+      "D_INITIAL": {
+        "TEXT": "<p>Het idee van de tijdlijn is om een beter beeld te geven van hoe iemands geplande taken zich in de loop van de tijd afspelen. Het wordt automatisch gegenereerd op basis van uw taken en onderscheidt twee verschillende dingen: <strong>geplande taken</strong>, die op hun geplande tijd worden weergegeven, en <strong>gewone taken</strong> die rond die vaste gebeurtenissen zouden moeten stromen. Bij alle taken wordt rekening gehouden met de tijdschattingen die u eraan hebt toegewezen.</p><p>Daarnaast kunt u ook een begin- en eindtijd van het werk opgeven. Als geconfigureerde reguliere taken daarbuiten nooit verschijnen. Houd er rekening mee dat de tijdlijn alleen de komende 30 dagen omvat.</p>",
+        "TITLE": "Tijdlijn"
+      },
+      "END": "Einde van het werk",
+      "LUNCH_BREAK": "Lunchpauze",
+      "NO_TASKS": "Momenteel zijn er geen taken. Voeg een aantal taken toe via de + knop in de bovenste balk.",
+      "NOW": "nu",
+      "PLAN_END_DAY": "Plan aan het einde van de dag",
+      "PLAN_START_DAY": "Plan aan het begin van de dag",
+      "START": "werk start",
+      "TASK_PROJECTION_INFO": "Toekomstige projectie van een geplande herhaalbare taak"
     },
     "SEARCH_BAR": {
       "INFO": "Klik op het lijstpictogram om te zoeken naar gearchiveerde taken",
@@ -604,26 +807,38 @@
         "OK": "Doe het!"
       },
       "D_EDIT": {
-        "L_COUNTER": "Tel",
-        "TITLE": "Eenvoudige teller bewerken"
+        "CURRENT_STREAK": "Huidige streak",
+        "DAILY_GOAL": "Dagelijks doel",
+        "DAYS": "Dagen",
+        "L_COUNTER": "Tel"
       },
       "FORM": {
         "ADD_NEW": "Voeg een eenvoudige teller toe",
         "HELP": "Hier kunt u eenvoudige knoppen configureren die rechtsboven verschijnen. Het kunnen timers zijn of gewoon een simpele teller, die wordt opgeteld door erop te klikken.",
-        "L_AUTO_COUNT_UP": "Auto trigger telt op voor",
-        "L_AUTO_SWITCH_OFF": "Automatische trigger-uitschakeling voor",
-        "L_AUTO_SWITCH_ON": "Automatische trigger-schakelaar voor",
+        "L_COUNTDOWN_DURATION": "Duur aftellen",
+        "L_DAILY_GOAL": "Dagelijks doel voor succesvolle streak",
         "L_ICON": "Icoon",
         "L_ICON_ON": "Icoon wanneer geschakeld",
         "L_IS_ENABLED": "Ingeschakeld",
         "L_TITLE": "Titel",
+        "L_TRACK_STREAKS": "Baanstrepen",
         "L_TYPE": "Type",
+        "L_WEEKDAYS": "Weekdagen om te controleren op strepen",
         "TITLE": "Eenvoudige tellers",
         "TYPE_CLICK_COUNTER": "Klik op teller",
+        "TYPE_REPEATED_COUNTDOWN": "Herhaald aftellen",
         "TYPE_STOPWATCH": "Stopwatch"
+      },
+      "S": {
+        "GOAL_REACHED_1": "Je hebt je doel voor vandaag bereikt!",
+        "GOAL_REACHED_2": "Huidige streak duur:"
       }
     },
     "SYNC": {
+      "A": {
+        "ARCHIVE_ONLY_UPLOADED": "Uw gegevens zijn slechts gedeeltelijk geüpload. Probeer het later nog eens! Anders kunt u uw gegevens niet synchroniseren met andere apparaten.",
+        "POSSIBLE_LEGACY_DATA": "Super Productivity heeft de synchronisatie verbeterd door nu twee aparte bestanden te gebruiken in plaats van één, waardoor veel minder gegevens hoeven te worden overgezet. Het wordt aanbevolen om alle instanties van Super Productivity bij te werken en eerst gegevens te synchroniseren van de app-instantie waar de gegevens het meest recent zijn. Als dit de gegevens van je lokale apparaat zijn, negeer dan deze waarschuwing en ga gewoon door met uploaden door het volgende dialoogvenster te bevestigen."
+      },
       "C": {
         "EMPTY_SYNC": "U probeert een leeg gegevensobject te synchroniseren. Is dit uw allereerste synchronisatie van een (bijna) nieuwe app?",
         "FORCE_IMPORT": "Toch externe gegevens importeren?",
@@ -631,7 +846,8 @@
         "FORCE_UPLOAD_AFTER_ERROR": "Er is een fout opgetreden tijdens het uploaden van uw lokale gegevens. Probeer de update te forceren?",
         "MIGRATE_LEGACY": "Verouderde gegevens gedetecteerd tijdens het importeren. Wilt u proberen deze te migreren?",
         "NO_REMOTE_DATA": "Geen externe gegevens gevonden. Lokaal uploaden naar Remote?",
-        "TRY_LOAD_REMOTE_AGAIN": "Wilt u nogmaals gegevens van de afstandsbediening opnieuw laden?"
+        "TRY_LOAD_REMOTE_AGAIN": "Wilt u nogmaals gegevens van de afstandsbediening opnieuw laden?",
+        "UNABLE_TO_LOAD_REMOTE_DATA": "Kan gegevens van extern niet laden. Wilt u proberen de gegevens op afstand te overschrijven met uw lokale gegevens? Alle gegevens op afstand gaan hierbij verloren."
       },
       "D_AUTH_CODE": {
         "FOLLOW_LINK": "Open de volgende link en kopieer de daar verstrekte auth-code in het onderstaande invoerveld.",
@@ -650,33 +866,57 @@
         "USE_LOCAL": "Gebruik lokaal",
         "USE_REMOTE": "Gebruik afstandsbediening"
       },
+      "D_INCOMPLETE_SYNC": {
+        "BTN_CLOSE_APP": "App sluiten",
+        "BTN_DOWNLOAD_BACKUP": "Lokale back-up downloaden",
+        "BTN_FORCE_UPLOAD": "Upload lokaal forceren",
+        "T1": "Laatste synchronisatie was onvolledig!",
+        "T2": "Je archiefgegevens zijn niet goed geüpload tijdens de laatste synchronisatie:",
+        "T3": "Je hebt 2 opties:",
+        "T4": "1. Ga naar je andere apparaat en voltooi daar de synchronisatie.",
+        "T5": "2. Of je kunt de gegevens op afstand overschrijven met je lokale gegevens. Alle wijzigingen op afstand\n    verloren gaan!",
+        "T6": "Het maken van een back-up van de gegevens die je overschrijft wordt aanbevolen!!!"
+      },
+      "D_PERMISSION": {
+        "DISABLE_SYNC": "Synchronisatie uitschakelen",
+        "PERM_FILE": "Geef permissies",
+        "TEXT": "<p>Uw bestandsrechten voor lokaal synchroniseren zijn ingetrokken.</p>",
+        "TITLE": "Synchroniseren: Toestemming lokaal bestand geweigerd"
+      },
       "FORM": {
         "DROPBOX": {
           "L_ACCESS_TOKEN": "Toegangstoken (gegenereerd op basis van Auth Code)"
         },
         "GOOGLE": {
-          "L_IS_COMPRESS_DATA": "Comprimeer gegevens",
           "L_SYNC_FILE_NAME": "Synchroniseer bestandsnaam"
         },
-        "LOCAL_FILE": {
-          "L_SYNC_FILE_PATH": "Synchroniseer bestandspad",
-          "L_SYNC_FILE_PATH_DESCRIPTION": "Absoluut pad naar het bestand dat moet worden gebruikt voor synchronisatie (wordt gemaakt)."
-        },
+        "L_ENABLE_COMPRESSION": "Compressie inschakelen (snellere data overdracht)",
+        "L_ENABLE_ENCRYPTION": "End-to-end encryptie inschakelen (experiment) - Maak je data ontoegankelijk voor je sync provider",
         "L_ENABLE_SYNCING": "Schakel synchronisatie in",
+        "L_ENCRYPTION_NOTES": "BELANGRIJKE OPMERKINGEN: Je moet hetzelfde wachtwoord instellen op je andere apparaten <strong>VOOR</strong> de volgende synchronisatie om alles te laten werken. Kies een veilig wachtwoord. Houd er ook rekening mee dat <strong>je GEEN toegang hebt tot je gegevens als je dit wachtwoord vergeet. Er is GEEN herstel mogelijk</strong>aangezien alleen jij de sleutel hebt. De encryptie zal waarschijnlijk goed genoeg zijn om de meeste aanvallers tegen te houden, maar <strong>er is geen garantie.</strong>",
+        "L_ENCRYPTION_PASSWORD": "Encryptie Wachtwoord (NIET VERGETEN)",
         "L_SYNC_INTERVAL": "Synchronisatie-interval",
         "L_SYNC_PROVIDER": "Synchronisatieprovider",
+        "LOCAL_FILE": {
+          "L_SYNC_FILE_PATH_PERMISSION_VALIDATION": "Toestemming nodig voor bestandstoegang",
+          "L_SYNC_FOLDER_PATH": "Map pad synchroniseren"
+        },
         "TITLE": "Synchroniseren",
         "WEB_DAV": {
           "CORS_INFO": "<strong>Experimenteel !!</strong> Om dit te laten werken, moet u CORS uitschakelen of beperken voor uw Nextcloud-instantie, wat negatieve gevolgen voor de veiligheid kan hebben! Raadpleeg <a href='https://github.com/nextcloud/server/issues/3131'>deze thread</a> voor meer informatie. Gebruik op eigen risico!",
           "L_BASE_URL": "Basis-URL",
           "L_PASSWORD": "Wachtwoord",
-          "L_SYNC_FILE_PATH": "Synchroniseer bestandspad",
+          "L_SYNC_FOLDER_PATH": "Map pad synchroniseren",
           "L_USER_NAME": "Gebruikersnaam"
         }
       },
       "S": {
+        "ALREADY_IN_SYNC": "Al gesynchroniseerd",
+        "ALREADY_IN_SYNC_NO_LOCAL_CHANGES": "Geen locale wijzigingen - Al gesynchroniseerd",
         "ERROR_FALLBACK_TO_BACKUP": "Er is iets misgegaan tijdens het importeren van de gegevens. Terugvallen op lokale back-up.",
         "ERROR_INVALID_DATA": "Fout tijdens het synchroniseren. Onjuiste data",
+        "ERROR_NO_REV": "Geen geldige rev voor bestand op afstand",
+        "ERROR_UNABLE_TO_READ_REMOTE_DATA": "Fout tijdens synchroniseren. Kan gegevens op afstand niet lezen. Misschien heb je versleuteling ingeschakeld en komt je lokale wachtwoord niet overeen met het wachtwoord dat is gebruikt om de gegevens op afstand te versleutelen?",
         "IMPORTING": "Gegevens importeren",
         "INCOMPLETE_CFG": "Verificatie voor synchronisatie is mislukt. Controleer uw configuratie!",
         "INITIAL_SYNC_ERROR": "Initiële synchronisatie mislukt",
@@ -710,6 +950,19 @@
       }
     },
     "TASK": {
+      "ADD_TASK_BAR": {
+        "ADD_EXISTING_TASK": "Voeg bestaande taak \"{{taskTitle}}\" toe",
+        "ADD_ISSUE_TASK": "Voeg probleem #{{issueNr}} van {{issueType}}toe",
+        "ADD_TASK_TO_BOTTOM_OF_BACKLOG": "Taak onderaan de achterstand toevoegen",
+        "ADD_TASK_TO_BOTTOM_OF_TODAY": "Taak onderaan lijst toevoegen",
+        "ADD_TASK_TO_TOP_OF_BACKLOG": "Taak bovenaan de achterstand toevoegen",
+        "ADD_TASK_TO_TOP_OF_TODAY": "Taak bovenaan lijst toevoegen",
+        "CREATE_TASK": "Maak een nieuwe taak",
+        "EXAMPLE": "Voorbeeld: \"Een taaktitel + projectnaam # een tag # een andere tag 10 m / 3 uur\"",
+        "START": "Druk nogmaals op Enter om te beginnen",
+        "TOGGLE_ADD_TO_BACKLOG_TODAY": "Toggle taak toevoegen aan backlog / lijst van vandaag'.",
+        "TOGGLE_ADD_TOP_OR_BOTTOM": "Schakelen tussen het toevoegen van taken aan de boven- en onderkant van de lijst"
+      },
       "ADDITIONAL_INFO": {
         "ADD_ATTACHMENT": "Voeg bijlage toe",
         "ADD_SUB_TASK": "Subtaak toevoegen",
@@ -721,19 +974,10 @@
         "REMINDER": "Herinnering",
         "REPEAT": "Herhaling",
         "SCHEDULE_TASK": "Taak plannen",
+        "SCHEDULED_AT": "Gepland op",
         "SUB_TASKS": "Subtaken ({{nr}})",
-        "TIME": "Tijd"
-      },
-      "ADD_TASK_BAR": {
-        "ADD_EXISTING_TASK": "Voeg bestaande taak \"{{taskTitle}}\" toe",
-        "ADD_ISSUE_TASK": "Voeg probleem #{{issueNr}} van {{issueType}}toe",
-        "ADD_TASK_TO_BOTTOM_OF_BACKLOG": "Taak onderaan de achterstand toevoegen",
-        "ADD_TASK_TO_BOTTOM_OF_TODAY": "Taak onderaan lijst toevoegen",
-        "ADD_TASK_TO_TOP_OF_BACKLOG": "Taak bovenaan de achterstand toevoegen",
-        "ADD_TASK_TO_TOP_OF_TODAY": "Taak bovenaan lijst toevoegen",
-        "CREATE_TASK": "Maak een nieuwe taak",
-        "EXAMPLE": "Voorbeeld: \"Een taaktitel + projectnaam # een tag # een andere tag 10 m / 3 uur\"",
-        "START": "Druk nogmaals op Enter om te beginnen"
+        "TIME": "Tijd",
+        "TITLE_PLACEHOLDER": "Voer een titel in"
       },
       "B": {
         "ADD_HALF_HOUR": "Voeg 1/2 uur toe",
@@ -745,9 +989,12 @@
         "ADD_TO_PROJECT": "Voeg toe aan een project",
         "CONVERT_TO_PARENT_TASK": "Converteren naar bovenliggende taak",
         "DELETE": "Taak verwijderen",
+        "DELETE_REPEAT_INSTANCE": "Herhaalde taakinstantie verwijderen",
         "DROP_ATTACHMENT": "Zet hier neer om te koppelen aan \"{{title}}\"",
-        "EDIT_REMINDER": "Herinnering bewerken",
+        "EDIT_SCHEDULED": "Herinnering bewerken",
         "EDIT_TAGS": "Bewerk-tags",
+        "EDIT_TASK_TITLE": "Titel bewerken",
+        "FOCUS_SESSION": "Start focus sessie",
         "MARK_DONE": "Markeer als voltooid",
         "MARK_UNDONE": "Markeren als ongedaan gemaakt",
         "MOVE_TO_BACKLOG": "Verplaats naar backlog",
@@ -760,29 +1007,21 @@
         "REPEAT_EDIT": "Herhaal taakconfiguratie bewerken",
         "SCHEDULE": "Taak plannen",
         "SHOW_UPDATES": "Updates weergeven",
-        "TOGGLE_ADDITIONAL": "Extra informatie tonen / verbergen",
         "TOGGLE_ATTACHMENTS": "Bijlagen tonen / verbergen",
+        "TOGGLE_DETAIL_PANEL": "Extra informatie tonen / verbergen",
         "TOGGLE_DONE": "Markeren als gereed / ongedaan gemaakt",
         "TOGGLE_SUB_TASK_VISIBILITY": "Zichtbaarheid van subtaken in- / uitschakelen",
         "TRACK_TIME": "Begin met het bijhouden van de tijd",
         "TRACK_TIME_STOP": "Pauzeer de volgtijd",
         "UPDATE_ISSUE_DATA": "Update probleemgegevens"
       },
-      "D_REMINDER_ADD": {
-        "CONFIRM_REPEAT_OK": "Planning",
-        "CONFIRM_REPEAT_TXT": "U probeert deze herhaalde taak op een andere dag te plannen. Herhaalde taken zijn meestal bedoeld om op bepaalde dagen opnieuw te worden gemaakt en alleen op die dag te worden gepland. Wil je toch doorgaan?",
-        "DATETIME_FOR": "Datetime voor herinnering",
-        "EDIT": "Herinnering bewerken",
-        "MOVE_TO_BACKLOG": "Verplaats taak naar backlog tot gepland",
-        "REMIND_AT": "Herinner bij",
-        "RO_10M": "10 minuten voordat het begint",
-        "RO_15M": "15 minuten voordat het begint",
-        "RO_1H": "1 uur voordat het begint",
-        "RO_30M": "30 minuten voordat het begint",
-        "RO_5M": "5 minuten voordat het begint",
-        "RO_START": "wanneer het begint",
-        "SCHEDULE": "Schema",
-        "UNSCHEDULE": "Ongepland"
+      "D_CONFIRM_SHORT_SYNTAX_NEW_TAG": {
+        "MSG": "Wil je de nieuwe tag {{tagsTxt}}aanmaken?",
+        "OK": "Tag maken"
+      },
+      "D_CONFIRM_SHORT_SYNTAX_NEW_TAGS": {
+        "MSG": "Wilt u de nieuwe tags {{tagsTxt}}aanmaken?",
+        "OK": "Labels maken"
       },
       "D_REMINDER_VIEW": {
         "ADD_ALL_TO_TODAY": "Voeg alles toe aan vandaag",
@@ -796,11 +1035,30 @@
         "FOR_OTHER": "Taak is verschuldigd. Wil je eraan beginnen te werken?",
         "FROM_PROJECT": "Van project: \"{{title}}\"",
         "FROM_TAG": "Van tag: \"{{title}}\"",
+        "RESCHEDULE_EDIT": "Bewerken (opnieuw plannen)",
         "RESCHEDULE_UNTIL_TOMORROW": "Tot morgen",
         "SNOOZE": "Snooze",
         "SNOOZE_ALL": "Snooze All",
         "START": "Begin",
         "SWITCH_CONTEXT_START": "Wissel van context en start"
+      },
+      "D_SCHEDULE_TASK": {
+        "MOVE_TO_BACKLOG": "Verplaats taak naar backlog tot gepland",
+        "QA_NEXT_MONTH": "Volgende maand plannen",
+        "QA_NEXT_WEEK": "Planning volgende week",
+        "QA_REMOVE_TODAY": "Verwijder taak van vandaag",
+        "QA_TODAY": "Plan vandaag",
+        "QA_TOMORROW": "Morgen plannen",
+        "REMIND_AT": "Herinner bij",
+        "RO_1H": "1 uur voordat het begint",
+        "RO_5M": "5 minuten voordat het begint",
+        "RO_10M": "10 minuten voordat het begint",
+        "RO_15M": "15 minuten voordat het begint",
+        "RO_30M": "30 minuten voordat het begint",
+        "RO_NEVER": "Nooit",
+        "RO_START": "wanneer het begint",
+        "SCHEDULE": "Schema",
+        "UNSCHEDULE": "Ongepland"
       },
       "D_TIME": {
         "ADD_FOR_OTHER_DAY": "Voeg tijd toe voor een andere dag",
@@ -822,6 +1080,7 @@
         "ESTIMATE_EXCEEDED_BODY": "Je hebt je geschatte tijd voor \"{{title}}\" overschreden."
       },
       "S": {
+        "CANNOT_ASSIGN_PROJECT_FOR_REPEATABLE_TASK": "Kan project niet toewijzen via korte syntaxis voor herhaalbare taken!",
         "DELETED": "Taak \"{{title}}\" verwijderd",
         "FOUND_MOVE_FROM_BACKLOG": "Taak <strong>{{title}}</strong> verplaatst van backlog naar de takenlijst van vandaag",
         "FOUND_MOVE_FROM_OTHER_LIST": "Taak <strong>{{title}}</strong> van <strong>{{contextTitle}}</strong> toegevoegd aan huidige lijst",
@@ -842,12 +1101,44 @@
       }
     },
     "TASK_REPEAT": {
+      "ADD_INFO_PANEL": {
+        "CUSTOM": "Aangepaste herhalingsconfiguratie",
+        "CUSTOM_AND_TIME": "Aangepast, {{timeStr}}",
+        "CUSTOM_WEEKLY": "{{daysStr}}",
+        "CUSTOM_WEEKLY_AND_TIME": "{{daysStr}}, {{timeStr}}",
+        "DAILY": "Iedere dag",
+        "DAILY_AND_TIME": "Iedere dag, {{timeStr}}",
+        "EVERY_X_DAILY": "Iedere {{x}} dagen",
+        "EVERY_X_DAILY_AND_TIME": "Iedere {{x}} dagen, {{timeStr}}",
+        "EVERY_X_MONTHLY": "Iedere {{x}} maand",
+        "EVERY_X_MONTHLY_AND_TIME": "Iedere {{x}} maanden, {{timeStr}}",
+        "EVERY_X_YEARLY": "Iedere {{x}} jaren",
+        "EVERY_X_YEARLY_AND_TIME": "Iedere {{x}} jaren, {{timeStr}}",
+        "MONDAY_TO_FRIDAY": "Ma-Vr",
+        "MONDAY_TO_FRIDAY_AND_TIME": "Ma-Vr, {{timeStr}}",
+        "MONTHLY_CURRENT_DATE": "Maandelijks op {{dateDayStr}}de",
+        "MONTHLY_CURRENT_DATE_AND_TIME": "Maandelijks op {{dateDayStr}}de, {{timeStr}}",
+        "WEEKLY_CURRENT_WEEKDAY": "Wekelijks op {{{weekdayStr}}",
+        "WEEKLY_CURRENT_WEEKDAY_AND_TIME": "Wekelijks op {{weekdayStr}}, {{timeStr}}",
+        "YEARLY_CURRENT_DATE": "Jaarlijks op {{dayAndMonthStr}}",
+        "YEARLY_CURRENT_DATE_AND_TIME": "Jaarlijks op {{dayAndMonthStr}}, {{timeStr}}"
+      },
+      "D_CONFIRM_MOVE_TO_PROJECT": {
+        "MSG": "Er zijn {{tasksNr}} instanties aangemaakt voor deze herhaalbare taak. Wil je ze allemaal verplaatsen naar het project \"{{projectName}}\"?",
+        "OK": "Alle instanties bijwerken"
+      },
       "D_CONFIRM_REMOVE": {
         "MSG": "Als u de herhaalconfiguratie verwijdert, worden alle eerdere instanties van deze taak geconverteerd naar alleen gewone taken. weet je zeker dat je verder wilt gaan",
         "OK": "Volledig verwijderen"
       },
+      "D_CONFIRM_UPDATE_INSTANCES": {
+        "CANCEL": "Alleen toekomstige taken",
+        "MSG": "Er zijn {{tasksNr}} instanties aangemaakt voor deze herhaalbare taak. Wilt u ze allemaal bijwerken met de nieuwe standaardwaarden of alleen toekomstige taken?",
+        "OK": "Alle instanties bijwerken"
+      },
       "D_EDIT": {
         "ADD": "Voeg herhaalde taakconfiguratie toe",
+        "ADVANCED_CFG": "Uitgebreide configuratie",
         "EDIT": "Herhaal taakconfiguratie bewerken",
         "HELP1": "Herhalende taken zijn bedoeld voor dagelijkse taken, bijvoorbeeld: \"Organisatie\", \"Dagelijkse vergadering\", \"Code review\", \"E-mails controleren\" of soortgelijke taken die waarschijnlijk steeds weer zullen voorkomen.",
         "HELP2": "Eenmaal geconfigureerd, wordt een herhalende taak opnieuw gemaakt op elke hieronder geselecteerde dag zodra u uw project opent en wordt automatisch gemarkeerd als voltooid aan het einde van de dag. Ze worden als verschillende instanties behandeld. U kunt dus vrijelijk subtaken toevoegen enz.",
@@ -856,15 +1147,30 @@
         "TAG_LABEL": "Tags om toe te voegen"
       },
       "F": {
+        "C_DAY": "Dag",
+        "C_MONTH": "Maand",
+        "C_WEEK": "Week",
+        "C_YEAR": "Jaar",
         "DEFAULT_ESTIMATE": "Standaardschatting",
         "FRIDAY": "vrijdag",
         "IS_ADD_TO_BOTTOM": "Verplaats taak naar de onderkant van de lijst",
         "MONDAY": "maandag",
+        "NOTES": "Standaard notities",
         "ORDER": "Bestellen",
         "ORDER_DESCRIPTION": "Aanmaakvolgorde van herhaalbare taken. Heeft alleen invloed op herhaalbare taken die tegelijkertijd zijn gemaakt. Een lagere waarde betekent dat een taak hoger in de lijst wordt gemaakt, een lager aantal dat het verderop in de lijst staat. Een waarde groter dan 0 betekent dat items onderaan normale taken worden gemaakt.",
+        "Q_CUSTOM": "Aangepaste herhalingsconfiguratie",
+        "Q_DAILY": "Iedere dag",
+        "Q_MONDAY_TO_FRIDAY": "Iedere maandag tot vrijdag",
+        "Q_MONTHLY_CURRENT_DATE": "Elke maand op de {{dateDayStr}}e",
+        "Q_WEEKLY_CURRENT_WEEKDAY": "Iedere week op {{weekdayStr}}",
+        "Q_YEARLY_CURRENT_DATE": "Ieder jaar op {{dayAndMonthStr}}",
+        "QUICK_SETTING": "Herhaal configuratie",
         "REMIND_AT": "Herinner bij",
         "REMIND_AT_PLACEHOLDER": "Selecteer wanneer u eraan wilt herinneren",
+        "REPEAT_CYCLE": "Cyclus herhalen",
+        "REPEAT_EVERY": "Herhalen iedere",
         "SATURDAY": "zaterdag",
+        "START_DATE": "Start datum",
         "START_TIME": "Geplande starttijd",
         "START_TIME_DESCRIPTION": "bijv. 15:00 uur. Laat leeg voor een hele dagtaak",
         "SUNDAY": "zondag",
@@ -873,22 +1179,6 @@
         "TUESDAY": "dinsdag",
         "WEDNESDAY": "woensdag"
       }
-    },
-    "TIMELINE": {
-      "CONTINUED": "vervolgd",
-      "D_INITIAL": {
-        "TEXT": "<p>Het idee van de tijdlijn is om een beter beeld te geven van hoe iemands geplande taken zich in de loop van de tijd afspelen. Het wordt automatisch gegenereerd op basis van uw taken en onderscheidt twee verschillende dingen: <strong>geplande taken</strong>, die op hun geplande tijd worden weergegeven, en <strong>gewone taken</strong> die rond die vaste gebeurtenissen zouden moeten stromen. Bij alle taken wordt rekening gehouden met de tijdschattingen die u eraan hebt toegewezen.</p><p>Daarnaast kunt u ook een begin- en eindtijd van het werk opgeven. Als geconfigureerde reguliere taken daarbuiten nooit verschijnen. Houd er rekening mee dat de tijdlijn alleen de komende 30 dagen omvat.</p>",
-        "TITLE": "Tijdlijn"
-      },
-      "END": "Einde van het werk",
-      "MENU_TITLE": "Tijdlijn",
-      "NOW": "nu",
-      "NO_TASKS": "Momenteel zijn er geen taken. Voeg een aantal taken toe via de + knop in de bovenste balk.",
-      "S": {
-        "CAL_PROVIDER_ERROR": "Tijdlijn Cal Provider-fout: {{errTxt}}"
-      },
-      "START": "werk start",
-      "TASK_PROJECTION_INFO": "Toekomstige projectie van een geplande herhaalbare taak"
     },
     "TIME_TRACKING": {
       "B": {
@@ -900,17 +1190,19 @@
         "MSG": "U heeft de tijd niet bijgehouden voor {{time}}"
       },
       "D_IDLE": {
+        "ADD_ENTRY": "Item toevoegen voor volgen",
         "BREAK": "Pauze",
         "CREATE_AND_TRACK": "<em>Maak</em> en ga naar:",
         "IDLE_FOR": "Je hebt niets gedaan voor:",
+        "RESET_BREAK_REMINDER_TIMER": "Reset pauzeherinneringstimer",
         "SIMPLE_CONFIRM_COUNTER_CANCEL": "overspringen",
         "SIMPLE_CONFIRM_COUNTER_OK": "bijhouden",
         "SIMPLE_COUNTER_CONFIRM_TXT": "U heeft overslaan geselecteerd, maar heeft {{nr}} eenvoudige tellerknop(pen) geactiveerd. Wilt u de inactieve tijd voor hen bijhouden?",
         "SIMPLE_COUNTER_TOOLTIP": "Klik om te volgen naar {{title}}",
         "SIMPLE_COUNTER_TOOLTIP_DISABLE": "Klik om NIET te volgen naar {{title}}",
         "SKIP": "Overslaan",
+        "SPLIT_TIME": "Verdeel tijd in meerdere taken en pauzes",
         "TASK": "Taak",
-        "TASK_BREAK": "Taak + pauze",
         "TRACK_TO": "Track naar:"
       },
       "D_TRACKING_REMINDER": {
@@ -981,30 +1273,38 @@
   "FILE_IMEX": {
     "EXPORT_DATA": "Exportgegevens",
     "IMPORT_FROM_FILE": "Importeren uit bestand",
+    "PRIVACY_EXPORT": "Geanonimiseerde gegevens exporteren (om naar contact@super-productivity.com te sturen voor debugging)",
     "S_ERR_INVALID_DATA": "Importeren mislukt: ongeldige JSON"
   },
   "G": {
+    "ADD": "Voeg  toe",
     "CANCEL": "annuleren",
-    "CLICK_TO_EDIT": "Klik om te bewerken",
     "CLOSE": "Sluiten",
     "DELETE": "Verwijderen",
     "DISMISS": "Afwijzen",
     "DO_IT": "Doe het!",
+    "DURATION_DESCRIPTION": "bijvoorbeeld \"5h 23m\" wat resulteert in 5 uur in 23 minuten",
     "EDIT": "Bewerk",
     "ENABLED": "Ingeschakeld",
+    "EXAMPLE_VAL": "Klik om te bewerken",
     "EXTENSION_INFO": "<a target=\"_blank\" href=\"https://chrome.google.com/webstore/detail/super-productivity/ljkbjodfmekklcoibdnhahlaalhihmlb\"> Download de Chrome-extensie</a> om communicatie met de Jira Api en Idle Time Handling mogelijk te maken. Merk op dat dit niet werkt voor mobiel.",
+    "HIDE": "Verberg",
+    "ICON_INP_DESCRIPTION": "Alle utf-8 emoji's worden ook ondersteund!",
     "LOGIN": "Log in",
     "LOGOUT": "Uitloggen",
     "MINUTES": "{{m}} minuten",
     "NEXT": "De volgende",
-    "NONE": "Geen",
     "NO_CON": "Je bent momenteel offline. Maak opnieuw verbinding met internet.",
+    "NONE": "Geen",
     "OK": "OK",
     "PREVIOUS": "Vorige",
     "REMOVE": "Verwijderen",
     "RESET": "Reset",
     "SAVE": "Opslaan",
+    "SUBMIT": "Stuur  in",
     "TITLE": "Titel",
+    "TODAY_TAG_TITLE": "Vandaag",
+    "TRACKING_INTERVAL_DESCRIPTION": "Volg de tijd met dit interval in milliseconden. Je zou dit kunnen veranderen om het schrijven naar schijf te verminderen. Zie probleem #2355.",
     "UNDO": "Ongedaan maken",
     "UPDATE": "Bijwerken",
     "WITHOUT_PROJECT": "Zonder project",
@@ -1017,15 +1317,29 @@
       "LOCATION_INFO": "Back-ups worden opgeslagen in:",
       "TITLE": "Automatische back-ups"
     },
+    "CALENDARS": {
+      "BROWSER_WARNING": "Vanwege cross origin beperkingen <b>zal dit waarschijnlijk NIET werken met de browserversie van Super Productivity.<br />  <a href=\"https://super-productivity.com/download/\">Download de desktopversie</a> om deze functie te gebruiken!</b>",
+      "CAL_PATH": "Url van de iCal-bron",
+      "CAL_PROVIDERS": "Kalenderproviders (experimenteel en optioneel)",
+      "CHECK_UPDATES": "Elke X controleren op updates op afstand",
+      "DEFAULT_PROJECT": "Standaard Project voor toegevoegde kalendertaken",
+      "HELP": "Je kunt kalenders integreren om eraan herinnerd te worden en ze toevoegen als taken binnen Super Productivity. De integratie maakt gebruik van de iCal-indeling. Om dit te laten werken moeten uw agenda's toegankelijk zijn via het internet of via het bestandssysteem.",
+      "SHOW_BANNER_THRESHOLD": "Toon een melding X voor de gebeurtenis (leeg voor uitgeschakeld)"
+    },
     "EVALUATION": {
       "IS_HIDE_EVALUATION_SHEET": "Evaluatieblad verbergen op dagelijkse samenvatting",
       "TITLE": "Evaluatie en statistieken"
+    },
+    "FOCUS_MODE": {
+      "HELP": "De Focusmodus opent een scherm zonder afleiding om je te helpen focussen op je huidige taak.",
+      "L_ALWAYS_OPEN_FOCUS_MODE": "Altijd open scherpstelmodus, bij tracking",
+      "L_SKIP_PREPARATION_SCREEN": "Voorbereidingsscherm overslaan (stretchen enz.)",
+      "TITLE": "Scherpstelmodus"
     },
     "IDLE": {
       "HELP": "<div><p>Wanneer de verwerking van inactieve tijd is ingeschakeld, wordt na een bepaalde tijd een dialoogvenster geopend om te controleren of en voor welke taak u uw tijd wilt bijhouden, wanneer u inactief bent geweest.</p></div>",
       "IS_ENABLE_IDLE_TIME_TRACKING": "Inactieve tijdafhandeling inschakelen",
       "IS_ONLY_OPEN_IDLE_WHEN_CURRENT_TASK": "Activeer alleen een inactieve tijdsvenster wanneer een huidige taak is geselecteerd",
-      "IS_UN_TRACKED_IDLE_RESETS_BREAK_TIMER": "Niet-gevolgde inactieve tijd resets nemen een pauzetimer",
       "MIN_IDLE_TIME": "Activeer inactief na X",
       "TITLE": "Idle Handling"
     },
@@ -1045,20 +1359,24 @@
       "GLOBAL_TOGGLE_TASK_START": "Schakel tijdregistratie in voor de laatste actieve taak",
       "GO_TO_DAILY_AGENDA": "Ga naar Agenda",
       "GO_TO_FOCUS_MODE": "Ga naar Focus Mode",
+      "GO_TO_SCHEDULE": "Ga naar de tijdlijn",
       "GO_TO_SCHEDULED_VIEW": "Ga naar geplande taken",
       "GO_TO_SETTINGS": "Ga naar Instellingen",
-      "GO_TO_TIMELINE": "Ga naar de tijdlijn",
       "GO_TO_WORK_VIEW": "Ga naar Work View",
       "HELP": "<p>Hier kunt u alle sneltoetsen configureren.</p> <p>Klik op de tekstinvoer en voer de gewenste toetsenbordcombinatie in. Druk op enter om op te slaan en op Escape om af te breken.</p> <p>Er zijn drie soorten sneltoetsen:</p> <ul> <li><strong>Wereldwijde snelkoppelingen:</strong> wanneer de app wordt uitgevoerd, wordt de actie vanuit elke andere app geactiveerd.</li> <li><strong>Sneltoetsen op applicatieniveau:</strong> wordt geactiveerd vanuit elk scherm van de applicatie, maar niet als u momenteel een tekstveld bewerkt.</li> <li><strong>Sneltoetsen op taakniveau:</strong> Ze worden alleen geactiveerd als u een taak via muis of toetsenbord hebt geselecteerd en activeren meestal een actie die specifiek betrekking heeft op die ene taak.</li> </ul>",
       "MOVE_TASK_DOWN": "Verplaats taak naar beneden in lijst",
+      "MOVE_TASK_TO_BOTTOM": "Verplaats taak naar de onderkant van de lijst",
+      "MOVE_TASK_TO_TOP": "Verplaats taak naar de top van de lijst",
       "MOVE_TASK_UP": "Verplaats taak omhoog in lijst",
       "MOVE_TO_BACKLOG": "Verplaats taak naar backlog",
       "MOVE_TO_TODAYS_TASKS": "Verplaats taak naar de takenlijst van vandaag",
       "OPEN_PROJECT_NOTES": "Projectnotities tonen / verbergen",
+      "SAVE_NOTE": "Notitie opslaan",
       "SELECT_NEXT_TASK": "Selecteer de volgende taak",
       "SELECT_PREVIOUS_TASK": "Selecteer vorige taak",
       "SHOW_SEARCH_BAR": "Toon zoekbalk",
       "SYSTEM_SHORTCUTS": "Globale snelkoppelingen (systeembreed)",
+      "TASK_ADD_ATTACHMENT": "Voeg bestand of link toe",
       "TASK_ADD_SUB_TASK": "Subtaak toevoegen",
       "TASK_DELETE": "Taak verwijderen",
       "TASK_EDIT_TAGS": "Bewerk-tags",
@@ -1066,40 +1384,48 @@
       "TASK_MOVE_TO_PROJECT": "Verplaats taak naar projectmenu openen",
       "TASK_OPEN_CONTEXT_MENU": "Open het contextmenu van de taak",
       "TASK_OPEN_ESTIMATION_DIALOG": "Bewerk schatting / bestede tijd",
+      "TASK_PLAN_FORDAY": "Plan voor de dag",
       "TASK_SCHEDULE": "Taak plannen",
       "TASK_SHORTCUTS": "Taken",
       "TASK_SHORTCUTS_INFO": "De volgende sneltoetsen zijn van toepassing op de momenteel geselecteerde taak (geselecteerd via tab of muis).",
-      "TASK_TOGGLE_ADDITIONAL_INFO_OPEN": "Extra taakinformatie tonen / verbergen",
+      "TASK_TOGGLE_DETAIL_PANEL_OPEN": "Extra taakinformatie tonen / verbergen",
       "TASK_TOGGLE_DONE": "Toggle Gereed",
       "TITLE": "Toetsenbord sneltoetsen",
       "TOGGLE_BACKLOG": "Backlog weergeven / verbergen",
       "TOGGLE_BOOKMARKS": "Bladwijzerbalk tonen / verbergen",
+      "TOGGLE_ISSUE_PANEL": "Issuepaneel weergeven/verbergen",
       "TOGGLE_PLAY": "Taak starten / stoppen",
       "TOGGLE_SIDE_NAV": "Show & Focus / Hide Sidenav",
+      "TRIGGER_SYNC": "Triggersynchronisatie (indien geconfigureerd)",
       "ZOOM_DEFAULT": "Zoomstandaard (alleen desktop)",
       "ZOOM_IN": "Inzoomen (alleen desktop)",
       "ZOOM_OUT": "Uitzoomen (alleen desktop)"
     },
     "LANG": {
-      "AR": "Arabisch",
-      "DE": "Duitse",
+      "AR": "عربى",
+      "CZ": "Tsjechisch",
+      "DE": "Duits",
       "EN": "Engels",
-      "ES": "Spaans",
-      "FA": "Perzisch",
+      "ES": "Español",
+      "FA": "فارسی",
       "FR": "Frans",
-      "IT": "Italiaans",
-      "JA": "Japans",
-      "KO": "Koreaans",
+      "HR": "Hrvatski",
+      "ID": "Indonesisch",
+      "IT": "Italiano",
+      "JA": "日本語",
+      "KO": "BEWEEG ROND",
       "LABEL": "Selecteer een taal",
-      "NB": "Noors Bokmål",
+      "NB": "Norsk Bokmål",
       "NL": "Nederlands",
-      "PL": "Polere",
+      "PL": "Pools",
       "PT": "Portugees",
       "RU": "Russisch",
+      "SK": "Slowaaks",
       "TITLE": "Taal",
-      "TR": "Turks",
-      "ZH": "Chinees (vereenvoudigd)",
-      "ZH_TW": "Chinees (traditioneel)"
+      "TR": "Türkçe",
+      "UK": "Українська",
+      "ZH": "中文（简体）",
+      "ZH_TW": "中文(繁體)"
     },
     "MISC": {
       "DEFAULT_PROJECT": "Standaardproject om te gebruiken voor taken als er geen is opgegeven",
@@ -1107,15 +1433,17 @@
       "HELP": "<p><strong>Ziet u geen bureaubladmeldingen?</strong> Voor vensters wilt u misschien Systeem> Meldingen en acties controleren en controleren of de vereiste meldingen zijn ingeschakeld.</p>",
       "IS_AUTO_ADD_WORKED_ON_TO_TODAY": "Voeg automatisch de tag voor vandaag toe aan taken",
       "IS_AUTO_MARK_PARENT_AS_DONE": "Markeer de bovenliggende taak als voltooid wanneer alle subtaken zijn voltooid",
-      "IS_AUTO_START_NEXT_TASK": "Begin met het volgen van de volgende taak wanneer u de stroom als voltooid markeert",
       "IS_CONFIRM_BEFORE_EXIT": "Bevestig voordat u de app afsluit",
       "IS_CONFIRM_BEFORE_EXIT_WITHOUT_FINISH_DAY": "Bevestig voordat u de app verlaat zonder eerst de dag af te sluiten",
       "IS_DARK_MODE": "Donkere modus",
+      "IS_DISABLE_ANIMATIONS": "Alle animaties uitschakelen",
       "IS_HIDE_NAV": "Verberg navigatie totdat de hoofdkop is opgehangen (alleen desktop)",
       "IS_MINIMIZE_TO_TRAY": "Minimaliseren naar lade (alleen desktop)",
-      "IS_NOTIFY_WHEN_TIME_ESTIMATE_EXCEEDED": "Informeer wanneer de geschatte tijd is overschreden",
       "IS_TRAY_SHOW_CURRENT_TASK": "Toon huidige taak in het systeemvak / statusmenu (alleen desktop)",
       "IS_TURN_OFF_MARKDOWN": "Schakel markdown-parsering voor notities uit",
+      "IS_USE_MINIMAL_SIDE_NAV": "Gebruik een minimale navigatiebalk (toon alleen pictogrammen)",
+      "START_OF_NEXT_DAY": "Starttijd van de volgende dag",
+      "START_OF_NEXT_DAY_HINT": "vanaf wanneer (in uur) je wilt tellen dat de volgende dag is begonnen. standaard is middernacht wat 0 is.",
       "TASK_NOTES_TPL": "Taak omschrijving template",
       "TITLE": "Diverse instellingen"
     },
@@ -1126,6 +1454,7 @@
       "HELP": "<p>De pomodoro-timer kan via een aantal instellingen worden geconfigureerd. De duur van elke werksessie, de duur van normale pauzes, het aantal werksessies dat moet worden uitgevoerd voordat een langere pauze wordt gestart en de duur van deze langere pauze.</p> <p>Je kunt ook instellen of je je afleiding wilt weergeven tijdens je pomodoro-pauzes.</p> <p>Als u \"Pauzetijd bijhouden bij pomodoro-pauze\" instelt, worden ook uw pauzes bijgehouden als werktijd besteed aan een taak.</p> <p>Als u \"Pomodoro-sessie pauzeren wanneer er geen actieve taak is\" inschakelt, wordt de pomodoro-sessie ook onderbroken wanneer u een taak pauzeert.</p>",
       "IS_ENABLED": "Schakel pomodoro-timer in",
       "IS_MANUAL_CONTINUE": "Bevestig handmatig het starten van de volgende pomodoro-sessie",
+      "IS_MANUAL_CONTINUE_BREAK": "Handmatig bevestigen dat de volgende pauze begint",
       "IS_PLAY_SOUND": "Geluid afspelen wanneer de sessie is afgelopen",
       "IS_PLAY_SOUND_AFTER_BREAK": "Geluid afspelen als de pauze voorbij is",
       "IS_PLAY_TICK": "Speel elke seconde een tikgeluid",
@@ -1133,17 +1462,44 @@
       "LONGER_BREAK_DURATION": "Duur van langere pauzes",
       "TITLE": "Pomodoro Timer"
     },
+    "REMINDER": {
+      "COUNTDOWN_DURATION": "Toon banner X vóór de eigenlijke herinnering",
+      "IS_COUNTDOWN_BANNER_ENABLED": "Aftelbanner tonen voordat herinneringen klaar zijn",
+      "TITLE": "Herinneringen"
+    },
+    "SCHEDULE": {
+      "HELP": "De tijdlijnfunctie zou u een snel overzicht moeten geven van hoe uw geplande taken in de loop van de tijd verlopen. U vindt het in het menu aan de linkerkant onder <a href='#/schedule'>'Tijdlijn'</a>.",
+      "L_IS_LUNCH_BREAK_ENABLED": "Lunchpauze inschakelen",
+      "L_IS_WORK_START_END_ENABLED": "Beperk ongeplande taakstroom tot specifieke werktijden",
+      "L_LUNCH_BREAK_END": "Einde lunchpauze",
+      "L_LUNCH_BREAK_START": "Lunchpauze start",
+      "L_WORK_END": "Einde van de werkdag",
+      "L_WORK_START": "Start van de werkdag",
+      "LUNCH_BREAK_START_END_DESCRIPTION": "bijv. 13:00",
+      "TITLE": "Tijdlijn",
+      "WORK_START_END_DESCRIPTION": "bijv. 17:00"
+    },
+    "SHORT_SYNTAX": {
+      "HELP": "<p>Hier kun je korte syntaxisopties instellen bij het maken van een taak</p>",
+      "IS_ENABLE_DUE": "Korte syntaxis inschakelen (@<Due time>)",
+      "IS_ENABLE_PROJECT": "Korte syntaxis project inschakelen (+<Project name>)",
+      "IS_ENABLE_TAG": "Tag korte syntaxis inschakelen (#<Tag>)",
+      "TITLE": "Korte syntaxis"
+    },
     "SOUND": {
+      "BREAK_REMINDER_SOUND": "Herinneringsgeluid pauze",
       "DONE_SOUND": "Taak gedaan geluid",
       "IS_INCREASE_DONE_PITCH": "Verhoog de toon voor elke uitgevoerde taak",
-      "IS_PLAY_DONE_SOUND": "Speel geluid af wanneer de taak is gemarkeerd als voltooid",
       "TITLE": "Geluid",
       "VOLUME": "Volume"
     },
     "TAKE_A_BREAK": {
+      "ADD_NEW_IMG": "Motiverende afbeelding toevoegen",
+      "FULL_SCREEN_BLOCKER_DURATION": "Weergaveduur van het schermvullende venster (alleen desktop)",
       "HELP": "<div> <p>Hiermee kunt u een terugkerende herinnering configureren wanneer u een bepaalde tijd hebt gewerkt zonder een pauze te nemen.</p> <p>U kunt het weergegeven bericht wijzigen. $ {duration} wordt vervangen door de tijd die u zonder pauze doorbrengt.</p> </div>",
       "IS_ENABLED": "Schakel een pauzeherinnering in",
       "IS_FOCUS_WINDOW": "App-venster focussen wanneer herinnering actief is (alleen desktop)",
+      "IS_FULL_SCREEN_BLOCKER": "Bericht weergeven in schermvullend venster (alleen desktop)",
       "IS_LOCK_SCREEN": "Scherm vergrendelen wanneer er een pauze nodig is (alleen desktop)",
       "MESSAGE": "Neem een pauze-bericht",
       "MIN_WORKING_TIME": "Trigger neemt een pauze-melding nadat X zonder een heeft gewerkt",
@@ -1152,24 +1508,17 @@
       "SNOOZE_TIME": "Snoozetijd wanneer u wordt gevraagd om een pauze te nemen",
       "TITLE": "Pauzeherinnering"
     },
-    "TIMELINE": {
-      "CAL_PROVIDERS": "Agenda-providers (experimenteel en optioneel)",
-      "CAL_PROVIDERS_ADD": "ical bron toevoegen",
-      "CAL_PROVIDERS_INFO": "U kunt optioneel de tijdlijn configureren om ook gegevens uit iCal (bijvoorbeeld Google Agenda) te laden en weer te geven.",
-      "HELP": "De tijdlijnfunctie zou u een snel overzicht moeten geven van hoe uw geplande taken in de loop van de tijd verlopen. U vindt het in het menu aan de linkerkant onder <a href='#/timeline'>'Tijdlijn'</a>.",
-      "L_CAL_PATH": "URL/bestandspad voor kalender ICAL (optioneel)",
-      "L_IS_WORK_START_END_ENABLED": "Beperk ongeplande taakstroom tot specifieke werktijden",
-      "L_WORK_END": "Einde van de werkdag",
-      "L_WORK_START": "Start van de werkdag",
-      "TITLE": "Tijdlijn",
-      "WORK_START_END_DESCRIPTION": "bijv. 17:00"
-    },
-    "TRACKING_REMINDER": {
-      "HELP": "Configureer een banner om te verschijnen voor het geval u bent vergeten de tijdregistratie te starten.",
-      "L_IS_ENABLED": "Ingeschakeld",
-      "L_IS_SHOW_ON_MOBILE": "Weergeven op mobiele app",
-      "L_MIN_TIME": "Tijd om te wachten voordat je Banner laat zien",
-      "TITLE": "Herinnering voor tijdregistratie"
+    "TIME_TRACKING": {
+      "HELP": "De herinnering voor tijdregistratie is een banner die wordt weergegeven als je bent vergeten om tijdregistratie te starten.",
+      "L_DEFAULT_ESTIMATE": "Standaard tijdsinschatting voor nieuwe taken",
+      "L_DEFAULT_ESTIMATE_SUB_TASKS": "Standaard tijdsinschatting voor nieuwe subtaken",
+      "L_IS_AUTO_START_NEXT_TASK": "Volgende taak beginnen volgen wanneer huidige taak als gedaan wordt gemarkeerd",
+      "L_IS_NOTIFY_WHEN_TIME_ESTIMATE_EXCEEDED": "Informeer wanneer de geschatte tijd is overschreden",
+      "L_IS_TRACKING_REMINDER_ENABLED": "Traceerherinnering ingeschakeld",
+      "L_IS_TRACKING_REMINDER_SHOW_ON_MOBILE": "Traceerherinnering weergeven op mobiele app",
+      "L_TRACKING_INTERVAL": "Tijd tracking interval (EXPERIMENTEEL)",
+      "L_TRACKING_REMINDER_MIN_TIME": "Wachttijd voordat traceerherinnering wordt weergegeven Banner",
+      "TITLE": "Tijdregistratie"
     }
   },
   "GLOBAL_SNACK": {
@@ -1177,6 +1526,7 @@
     "ERR_COMPRESSION": "Fout voor compressie-interface",
     "FILE_DOWNLOADED": "{{fileName}} gedownload",
     "FILE_DOWNLOADED_BTN": "Open folder",
+    "NAVIGATE_TO_TASK_ERR": "Kon zich niet concentreren op taak. Heb je het verwijderd?",
     "PERSISTENCE_DISALLOWED": "Gegevens worden niet permanent bewaard. Houd er rekening mee dat dit kan leiden tot gegevensverlies !!",
     "PERSISTENCE_ERROR": "Fout bij verzoek om gegevens te bewaren: {{err}}",
     "RUNNING_X": "\"{{Str}}\" wordt uitgevoerd.",
@@ -1188,10 +1538,9 @@
     "DBX_GEN_TOKEN": "Dropbox: Genereer token ...",
     "DBX_META": "Dropbox: haal bestandsmeta op ...",
     "DBX_UPLOAD": "Dropbox: Upload bestand ...",
-    "GDRIVE_DOWNLOAD": "Google Drive: bestand downloaden ...",
-    "GDRIVE_UPLOAD": "Google Drive: bestand uploaden ...",
     "GITHUB_LOAD_ISSUE": "GitHub: Probleemgegevens laden ...",
     "JIRA_LOAD_ISSUE": "Jira: Probleemgegevens laden ...",
+    "SYNC": "Gegevens synchroniseren...",
     "UNKNOWN": "Externe gegevens laden",
     "WEB_DAV_DOWNLOAD": "WebDAV: gegevens downloaden ...",
     "WEB_DAV_UPLOAD": "WebDAV: gegevens uploaden ..."
@@ -1200,23 +1549,39 @@
     "ADD_NEW_TASK": "Voeg nieuwe taak toe",
     "CREATE_PROJECT": "Project maken",
     "CREATE_TAG": "Tag maken",
+    "DELETE_PROJECT": "Project verwijderen",
     "DELETE_TAG": "Tag verwijderen",
     "GO_TO_TASK_LIST": "Ga naar takenlijst",
-    "MANAGE_PROJECTS": "Beheer projecten",
+    "HELP": "Help",
+    "HM": {
+      "CALENDARS": "Howto: Kalenders verbinden",
+      "CONTRIBUTE": "Draag bij",
+      "GET_HELP_ONLINE": "Online hulp krijgen",
+      "KEYBOARD": "Howto: Geavanceerd toetsenbord",
+      "REDDIT_COMMUNITY": "Reddit-gemeenschap",
+      "REPORT_A_PROBLEM": "Een probleem melden",
+      "START_WELCOME": "Begin welkomstrondleiding",
+      "SYNC": "Howto: Synchronisatie configureren"
+    },
     "METRICS": "Metrische gegevens",
+    "NO_TAG_INFO": "Er zijn momenteel geen tags. U kunt tags toevoegen door `#uwTagNaam` in te voeren bij het toevoegen of bewerken van taken.",
     "NOTES": "Opmerkingen",
+    "NOTES_PANEL_INFO": "Notities kunnen alleen worden weergegeven vanuit de agenda en de gewone takenlijst.",
+    "PLANNER": "Planner",
     "PROCRASTINATE": "Talmen",
-    "PROJECTS": "Projecten",
     "PROJECT_MENU": "Project Menu",
     "PROJECT_SETTINGS": "Projectinstellingen",
+    "PROJECTS": "Projecten",
     "QUICK_HISTORY": "Snelle geschiedenis",
-    "SCHEDULED": "Gepland",
+    "REPEAT_SCHEDULED": "Herhalen/ Gepland",
+    "SCHEDULE": "Schema",
     "SETTINGS": "Instellingen",
     "SHOW_SEARCH_BAR": "Toon zoekbalk",
     "TAGS": "Tags",
-    "TASKS": "Taken",
     "TASK_LIST": "Takenlijst",
+    "TASKS": "Taken",
     "TOGGLE_SHOW_BOOKMARKS": "Bladwijzers tonen / verbergen",
+    "TOGGLE_SHOW_ISSUE_PANEL": "Toon/Verberg Probleem Paneel",
     "TOGGLE_SHOW_NOTES": "Projectnotities tonen / verbergen",
     "TOGGLE_TRACK_TIME": "Start / stop volgtijd",
     "TRIGGER_SYNC": "Synchronisatie handmatig activeren",
@@ -1233,60 +1598,32 @@
       "OK": "Aye aye! Afsluiten!"
     },
     "ESTIMATE_TOTAL": "Totale schatting:",
-    "EVALUATION": "Evaluatie",
+    "EVALUATE_DAY": "Evalueer",
     "EXPORT_TASK_LIST": "Takenlijst exporteren",
     "NO_TASKS": "Er zijn geen taken voor deze dag",
-    "PLAN": "Plan",
+    "PLAN_TOMORROW": "Plan",
+    "REVIEW_TASKS": "Beoordeling",
+    "ROUND_5M": "Rond alle taken af op 5 minuten",
     "ROUND_15M": "Rond alle taken af op 15 minuten",
     "ROUND_30M": "Rond alle taken af op 30 minuten",
-    "ROUND_5M": "Rond alle taken af op 5 minuten",
     "ROUND_TIME_SPENT": "Rond tijd besteed af",
     "ROUND_TIME_SPENT_TITLE": "Rond tijd besteed aan alle taken alle. Wees voorzichtig! Je kunt dit niet ongedaan maken!",
     "ROUND_TIME_WARNING": "!!! Wees voorzichtig dit kan niet ongedaan worden gemaakt !!!",
+    "ROUND_UP_5M": "Rond alle taken af op 5 minuten",
     "ROUND_UP_15M": "Rond alle taken af naar 15 minuten",
     "ROUND_UP_30M": "Rond alle taken af op 30 minuten",
-    "ROUND_UP_5M": "Rond alle taken af op 5 minuten",
     "SAVE_AND_GO_HOME": "Opslaan en naar huis gaan",
+    "SAVE_AND_GO_HOME_TOOLTIP": "Verplaats alle uitgevoerde taken naar het archief (werklogboek) en synchroniseer optioneel alle gegevens en sluit de app.",
     "START_END": "Begin het einde",
     "SUMMARY_FOR": "Dagelijks overzicht voor {{dayStr}}",
     "TASKS_COMPLETED": "Taken voltooid",
-    "TASK_LIST": "Takenlijst",
     "TIME_SPENT_AND_ESTIMATE_LABEL": "Bestede tijd / geschat",
     "TIME_SPENT_ESTIMATE_TITLE": "Bestede tijd: totale tijd die vandaag is besteed. Gearchiveerde taken niet inbegrepen. - Geschatte tijd: geschatte tijd voor taken waaraan vandaag is gewerkt minus de tijd die al op andere dagen met hen is doorgebracht.",
-    "TODAY": "Vandaag",
+    "TIME_SPENT_TODAY_BY_TAG": "Tijdsbesteding vandaag per label",
     "WEEK": "Week"
   },
   "PM": {
     "TITLE": "Projectstatistieken"
-  },
-  "PP": {
-    "ARCHIVED_PROJECTS": "Gearchiveerde projecten",
-    "ARCHIVE_PROJECT": "Archiefproject",
-    "CLICK_TO_HIDE": "Klik om het project in het menu te verbergen",
-    "CLICK_TO_SHOW": "Klik om project in menu te tonen",
-    "DELETE_PROJECT": "Project verwijderen",
-    "D_CONFIRM_ARCHIVE": {
-      "MSG": "Weet u zeker dat u dit project wilt archiveren? Gearchiveerde projecten worden niet meer in het menu weergegeven en u hebt geen toegang tot hun gegevens zonder ze te herstellen. Het wordt aanbevolen dat u een back-up van uw gegevens maakt voordat u dit doet.",
-      "OK": "Archief"
-    },
-    "D_CONFIRM_DELETE": {
-      "MSG": "Weet u zeker dat u dit project wilt verwijderen? Het wordt aanbevolen om een back-up van uw gegevens te maken voordat u dit doet.",
-      "OK": "Verwijderen"
-    },
-    "D_CONFIRM_UNARCHIVE": {
-      "MSG": "Weet u zeker dat u dit project uit het archief wilt verwijderen?",
-      "OK": "Uit archief halen"
-    },
-    "EDIT_PROJECT": "Project bewerken",
-    "EXPORT_PROJECT": "Project exporteren",
-    "GITHUB_CONFIGURED": "GitHub-integratie geconfigureerd",
-    "GITLAB_CONFIGURED": "GitLab-integratie geconfigureerd",
-    "IMPORT_FROM_FILE": "Importeren uit bestand",
-    "JIRA_CONFIGURED": "Jira-integratie geconfigureerd",
-    "OPEN_PROJECT_CONFIGURED": "OpenProject-integratie geconfigureerd",
-    "S_INVALID_JSON": "Ongeldige json voor projectbestand",
-    "TITLE": "Projectoverzicht",
-    "UN_ARCHIVE_PROJECT": "Unarchive Project"
   },
   "PS": {
     "GLOBAL_SETTINGS": "Algemene instellingen",
@@ -1300,11 +1637,15 @@
     "TOGGLE_DARK_MODE": "Schakel de donkere modus in"
   },
   "SCHEDULE": {
+    "NO_REPEATABLE_TASKS": "Er zijn momenteel geen herhaalde taken. Je kunt een taak inplannen door \"Taak herhalen\" te kiezen in het zijpaneel van de taak. Om het te openen klik je op het meest rechtse pictogram dat verschijnt wanneer je met de muis over een taak gaat (of tik gewoon op de taak op mobiel).",
     "NO_SCHEDULED": "Er zijn momenteel geen geplande taken. U kunt een taak plannen door \"Taak plannen\" te kiezen in het taakcontextmenu. Klik op de 3 kleine puntjes rechts van een taak om deze te openen.",
+    "NO_SCHEDULED_TITLE": "Geplande taken voor de dag",
+    "REPEATED_TASKS": "Herhaalde taken",
+    "SCHEDULED_TASKS": "Geplande taken",
+    "SCHEDULED_TASKS_WITH_REMINDER": "Geplande taken met herinnering",
     "START_TASK": "Start de taak nu en verwijder de herinnering"
   },
   "THEMES": {
-    "SELECT_THEME": "Selecteer thema",
     "amber": "amber",
     "blue": "blauw",
     "blue-grey": "blauw grijs",
@@ -1318,6 +1659,7 @@
     "lime": "limoen",
     "pink": "roze",
     "purple": "Purper",
+    "SELECT_THEME": "Selecteer thema",
     "teal": "groenblauw",
     "yellow": "geel"
   },
@@ -1339,13 +1681,18 @@
     "COMPLETED_TASKS": "Voltooide taken",
     "ESTIMATE_REMAINING": "Resterende schatting:",
     "FINISH_DAY": "Eindig de dag",
+    "FINISH_DAY_FOR_PROJECT": "Einddatum voor dit project",
+    "FINISH_DAY_FOR_TAG": "Einddatum voor deze tag",
+    "FINISH_DAY_TOOLTIP": "Evalueer je dag, verplaats alle uitgevoerde taken naar het archief (optioneel) en/of plan je volgende dag.",
     "HELP_PROCRASTINATION": "Help, ik stel het uit!",
     "NO_COMPLETED_TASKS": "Er zijn momenteel geen voltooide taken",
     "NO_PLANNED_TASKS": "Geen geplande taken",
     "READY_TO_WORK": "Klaar om te werken!",
     "RESET_BREAK_TIMER": "Reset zonder pauzetimer",
     "TIME_ESTIMATED": "Geschatte tijd:",
+    "TODAY_REMAINING": "Vandaag over:",
     "WITHOUT_BREAK": "Zonder pauze:",
-    "WORKING_TODAY": "Vandaag werken:"
+    "WORKING_TODAY": "Vandaag werken:",
+    "WORKING_TODAY_ARCHIVED": "Tijd die vandaag is besteed aan gearchiveerde taken"
   }
 }

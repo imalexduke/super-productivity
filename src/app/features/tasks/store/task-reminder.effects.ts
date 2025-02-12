@@ -1,4 +1,4 @@
-import { Injectable } from '@angular/core';
+import { Injectable, inject } from '@angular/core';
 import { Actions, createEffect, ofType } from '@ngrx/effects';
 import {
   deleteTask,
@@ -20,9 +20,16 @@ import { TaskService } from '../task.service';
 import { getDateTimeFromClockString } from '../../../util/get-date-time-from-clock-string';
 import { DEFAULT_DAY_START } from '../../config/default-global-config.const';
 import { moveProjectTaskToBacklogListAuto } from '../../project/store/project.actions';
+import { isSameDay } from '../../../util/is-same-day';
+import { isToday } from '../../../util/is-today.util';
 
 @Injectable()
 export class TaskReminderEffects {
+  private _actions$ = inject(Actions);
+  private _reminderService = inject(ReminderService);
+  private _snackService = inject(SnackService);
+  private _taskService = inject(TaskService);
+
   addTaskReminder$: any = createEffect(() =>
     this._actions$.pipe(
       ofType(scheduleTask),
@@ -36,45 +43,50 @@ export class TaskReminderEffects {
           ico: 'schedule',
         }),
       ),
-      mergeMap(({ task, remindAt, isMoveToBacklog }) => {
-        if (isMoveToBacklog && !task.projectId) {
-          throw new Error('Move to backlog not possible for non project tasks');
-        }
-        if (typeof remindAt !== 'number') {
-          return EMPTY;
-        }
+      mergeMap(
+        ({ isSkipAutoRemoveFromToday, task, remindAt, plannedAt, isMoveToBacklog }) => {
+          if (isMoveToBacklog && !task.projectId) {
+            throw new Error('Move to backlog not possible for non project tasks');
+          }
+          if (typeof remindAt !== 'number') {
+            return EMPTY;
+          }
 
-        const reminderId = this._reminderService.addReminder(
-          'TASK',
-          task.id,
-          truncate(task.title),
-          remindAt,
-        );
-        const isRemoveFromToday = isMoveToBacklog && task.tagIds.includes(TODAY_TAG.id);
+          const reminderId = this._reminderService.addReminder(
+            'TASK',
+            task.id,
+            truncate(task.title),
+            remindAt,
+          );
 
-        return [
-          updateTask({
-            task: { id: task.id, changes: { reminderId } },
-          }),
-          ...(isMoveToBacklog
-            ? [
-                moveProjectTaskToBacklogListAuto({
-                  taskId: task.id,
-                  projectId: task.projectId as string,
-                }),
-              ]
-            : []),
-          ...(isRemoveFromToday
-            ? [
-                updateTaskTags({
-                  task,
-                  newTagIds: task.tagIds.filter((tagId) => tagId !== TODAY_TAG.id),
-                  oldTagIds: task.tagIds,
-                }),
-              ]
-            : []),
-        ];
-      }),
+          const isRemoveFromToday =
+            !isSkipAutoRemoveFromToday &&
+            task.tagIds.includes(TODAY_TAG.id) &&
+            (!isToday(plannedAt) || isMoveToBacklog);
+
+          return [
+            updateTask({
+              task: { id: task.id, changes: { reminderId } },
+            }),
+            ...(isMoveToBacklog
+              ? [
+                  moveProjectTaskToBacklogListAuto({
+                    taskId: task.id,
+                    projectId: task.projectId as string,
+                  }),
+                ]
+              : []),
+            ...(isRemoveFromToday
+              ? [
+                  updateTaskTags({
+                    task,
+                    newTagIds: task.tagIds.filter((tagId) => tagId !== TODAY_TAG.id),
+                  }),
+                ]
+              : []),
+          ];
+        },
+      ),
     ),
   );
 
@@ -98,14 +110,18 @@ export class TaskReminderEffects {
           ico: 'schedule',
         }),
       ),
-      mergeMap(({ task, remindAt, isMoveToBacklog }) => {
+      mergeMap(({ task, remindAt, plannedAt, isMoveToBacklog }) => {
         if (isMoveToBacklog && !task.projectId) {
           throw new Error('Move to backlog not possible for non project tasks');
         }
         if (typeof remindAt !== 'number') {
           return EMPTY;
         }
-        const isRemoveFromToday = isMoveToBacklog && task.tagIds.includes(TODAY_TAG.id);
+
+        const isRemoveFromToday =
+          task.tagIds.includes(TODAY_TAG.id) &&
+          (!isSameDay(new Date(), plannedAt) || isMoveToBacklog);
+
         return [
           ...(isMoveToBacklog
             ? [
@@ -120,7 +136,6 @@ export class TaskReminderEffects {
                 updateTaskTags({
                   task,
                   newTagIds: task.tagIds.filter((tagId) => tagId !== TODAY_TAG.id),
-                  oldTagIds: task.tagIds,
                 }),
               ]
             : []),
@@ -197,27 +212,19 @@ export class TaskReminderEffects {
     () =>
       this._actions$.pipe(
         ofType(updateTaskTags),
-        filter(({ newTagIds }) => !!newTagIds && newTagIds.includes(TODAY_TAG.id)),
-        tap(({ task }) => {
+        tap(({ task, newTagIds }) => {
           if (
             task.reminderId &&
             task.plannedAt &&
-            // NOTE this could be an alternative approach
-            // task.plannedAt === getDateTimeFromClockString(DEFAULT_DAY_START, new Date())
-            task.plannedAt ===
-              getDateTimeFromClockString(DEFAULT_DAY_START, task.plannedAt)
+            newTagIds.includes(TODAY_TAG.id) &&
+            !task.tagIds.includes(TODAY_TAG.id) &&
+            task.plannedAt === getDateTimeFromClockString(DEFAULT_DAY_START, new Date())
           ) {
+            console.log('unscheduleScheduledForDayWhenAddedToToday$ special case <3');
             this._taskService.unScheduleTask(task.id, task.reminderId, true);
           }
         }),
       ),
     { dispatch: false },
   );
-
-  constructor(
-    private _actions$: Actions,
-    private _reminderService: ReminderService,
-    private _snackService: SnackService,
-    private _taskService: TaskService,
-  ) {}
 }

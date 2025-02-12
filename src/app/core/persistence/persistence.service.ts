@@ -1,11 +1,5 @@
-import { Injectable } from '@angular/core';
-import {
-  AllowedDBKeys,
-  DB,
-  DB_LEGACY,
-  DB_LEGACY_PROJECT_PREFIX,
-  LS,
-} from './storage-keys.const';
+import { inject, Injectable } from '@angular/core';
+import { AllowedDBKeys, DB } from './storage-keys.const';
 import { GlobalConfigState } from '../../features/config/global-config.model';
 import {
   ArchiveTask,
@@ -20,14 +14,8 @@ import {
 } from '../../imex/sync/sync.model';
 import { Reminder } from '../../features/reminder/reminder.model';
 import { DatabaseService } from './database.service';
-import { DEFAULT_PROJECT_ID } from '../../features/project/project.const';
-import {
-  ExportedProject,
-  ProjectArchive,
-  ProjectArchivedRelatedData,
-} from '../../features/project/project-archive.model';
+import { ProjectArchivedRelatedData } from '../../features/project/project-archive.model';
 import { Project, ProjectState } from '../../features/project/project.model';
-import { CompressionService } from '../compression/compression.service';
 import {
   PersistenceBaseEntityModel,
   PersistenceBaseModel,
@@ -53,7 +41,6 @@ import { Bookmark, BookmarkState } from '../../features/bookmark/bookmark.model'
 import { Note, NoteState } from '../../features/note/note.model';
 import { Action, Store } from '@ngrx/store';
 import { Tag, TagState } from '../../features/tag/tag.model';
-import { environment } from '../../../environments/environment';
 import { checkFixEntityStateConsistency } from '../../util/check-fix-entity-state-consistency';
 import {
   SimpleCounter,
@@ -70,6 +57,9 @@ import {
   ENTITY_MODEL_CFGS,
   PROJECT_MODEL_CFGS,
 } from './persistence.const';
+import { PersistenceLocalService } from './persistence-local.service';
+import { PlannerState } from '../../features/planner/store/planner.reducer';
+import { IssueProvider, IssueProviderState } from '../../features/issue/issue.model';
 
 const MAX_INVALID_DATA_ATTEMPTS = 10;
 
@@ -77,6 +67,10 @@ const MAX_INVALID_DATA_ATTEMPTS = 10;
   providedIn: 'root',
 })
 export class PersistenceService {
+  private _databaseService = inject(DatabaseService);
+  private _persistenceLocalService = inject(PersistenceLocalService);
+  private _store = inject<Store<any>>(Store);
+
   // handled as private but needs to be assigned before the creations
   _baseModels: PersistenceBaseModel<unknown>[] = [];
   _projectModels: PersistenceForProjectModel<unknown, unknown>[] = [];
@@ -88,11 +82,19 @@ export class PersistenceService {
   reminders: PersistenceBaseModel<Reminder[]> = this._cmBase<Reminder[]>(
     BASE_MODEL_CFGS.reminders,
   );
+  planner: PersistenceBaseModel<PlannerState> = this._cmBase<PlannerState>(
+    BASE_MODEL_CFGS.planner,
+  );
 
   project: PersistenceBaseEntityModel<ProjectState, Project> = this._cmBaseEntity<
     ProjectState,
     Project
   >(ENTITY_MODEL_CFGS.project);
+
+  issueProvider: PersistenceBaseEntityModel<IssueProviderState, IssueProvider> =
+    this._cmBaseEntity<IssueProviderState, IssueProvider>(
+      ENTITY_MODEL_CFGS.issueProvider,
+    );
 
   tag: PersistenceBaseEntityModel<TagState, Tag> = this._cmBaseEntity<TagState, Tag>(
     ENTITY_MODEL_CFGS.tag,
@@ -146,12 +148,6 @@ export class PersistenceService {
   private _isBlockSaving: boolean = false;
   private _invalidDataCount = 0;
 
-  constructor(
-    private _databaseService: DatabaseService,
-    private _compressionService: CompressionService,
-    private _store: Store<any>,
-  ) {}
-
   async getValidCompleteData(): Promise<AppDataComplete> {
     const d = await this.loadComplete();
     // if we are very unlucky (e.g. a task has updated but not the related tag changes) app data might not be valid. we never want to sync that! :)
@@ -167,96 +163,6 @@ export class PersistenceService {
       }
       return this.getValidCompleteData();
     }
-  }
-
-  // PROJECT ARCHIVING
-  // -----------------
-  async loadProjectArchive(): Promise<ProjectArchive> {
-    return await this._loadFromDb({
-      dbKey: 'archivedProjects',
-      legacyDBKey: DB_LEGACY.PROJECT_ARCHIVE,
-    });
-  }
-
-  async saveProjectArchive(
-    data: ProjectArchive,
-    isDataImport: boolean = false,
-  ): Promise<unknown> {
-    return await this._saveToDb({
-      dbKey: 'archivedProjects',
-      data,
-      isDataImport,
-      isSyncModelChange: false,
-    });
-  }
-
-  async loadArchivedProject(projectId: string): Promise<ProjectArchivedRelatedData> {
-    const archive = await this._loadFromDb({
-      dbKey: 'project',
-      legacyDBKey: DB_LEGACY.PROJECT_ARCHIVE,
-      projectId,
-    });
-    const projectDataCompressed = archive[projectId];
-    const decompressed = await this._compressionService.decompress(projectDataCompressed);
-    const parsed = JSON.parse(decompressed);
-    console.log(
-      `Decompressed project, size before: ${projectDataCompressed.length}, size after: ${decompressed.length}`,
-      parsed,
-    );
-    return parsed;
-  }
-
-  async removeArchivedProject(projectId: string): Promise<void> {
-    const archive = await this._loadFromDb({
-      dbKey: 'archivedProjects',
-      legacyDBKey: DB_LEGACY.PROJECT_ARCHIVE,
-    });
-    delete archive[projectId];
-    await this.saveProjectArchive(archive);
-  }
-
-  async saveArchivedProject(
-    projectId: string,
-    archivedProject: ProjectArchivedRelatedData,
-  ): Promise<unknown> {
-    const current = (await this.loadProjectArchive()) || {};
-    const jsonStr = JSON.stringify(archivedProject);
-    const compressedData = await this._compressionService.compress(jsonStr);
-    console.log(
-      `Compressed project, size before: ${jsonStr.length}, size after: ${compressedData.length}`,
-      archivedProject,
-    );
-    return this.saveProjectArchive({
-      ...current,
-      [projectId]: compressedData,
-    });
-  }
-
-  async loadCompleteProject(projectId: string): Promise<ExportedProject> {
-    const allProjects = await this.project.loadState();
-    if (!allProjects.entities[projectId]) {
-      throw new Error('Project not found');
-    }
-    return {
-      ...(allProjects.entities[projectId] as Project),
-      relatedModels: await this.loadAllRelatedModelDataForProject(projectId),
-    };
-  }
-
-  async loadAllRelatedModelDataForProject(
-    projectId: string,
-  ): Promise<ProjectArchivedRelatedData> {
-    const forProjectsData = await Promise.all(
-      this._projectModels.map(async (modelCfg) => {
-        return {
-          [modelCfg.appDataKey]: await modelCfg.load(projectId),
-        };
-      }),
-    );
-    const projectData = Object.assign({}, ...forProjectsData);
-    return {
-      ...projectData,
-    };
   }
 
   async removeCompleteRelatedDataForProject(projectId: string): Promise<void> {
@@ -278,42 +184,10 @@ export class PersistenceService {
     );
   }
 
-  async archiveProject(projectId: string): Promise<void> {
-    const projectData = await this.loadAllRelatedModelDataForProject(projectId);
-    await this.saveArchivedProject(projectId, projectData);
-    await this.removeCompleteRelatedDataForProject(projectId);
-  }
-
-  async unarchiveProject(projectId: string): Promise<void> {
-    const projectData = await this.loadArchivedProject(projectId);
-    await this.restoreCompleteRelatedDataForProject(projectId, projectData);
-    await this.removeArchivedProject(projectId);
-  }
-
   // BACKUP AND SYNC RELATED
   // -----------------------
-  updateLastLocalSyncModelChange(date: number = Date.now()): void {
-    if (!environment || !environment.production) {
-      console.log('Save Last Local Sync Model Change', date);
-    }
-    localStorage.setItem(LS.LAST_LOCAL_SYNC_MODEL_CHANGE, date.toString());
-  }
-
-  getLastLocalSyncModelChange(): number | null {
-    const la = localStorage.getItem(LS.LAST_LOCAL_SYNC_MODEL_CHANGE);
-    // NOTE: we need to parse because new Date('1570549698000') is "Invalid Date"
-    const laParsed = Number.isNaN(Number(la)) ? la : +(la as string);
-
-    if (laParsed === null || laParsed === 0) {
-      return null;
-    }
-
-    // NOTE: to account for legacy string dates
-    return new Date(laParsed).getTime();
-  }
-
   async loadBackup(): Promise<AppDataComplete> {
-    return this._loadFromDb({ dbKey: DB.BACKUP, legacyDBKey: DB.BACKUP });
+    return this._loadFromDb({ dbKey: DB.BACKUP });
   }
 
   async saveBackup(backup?: AppDataComplete): Promise<unknown> {
@@ -335,10 +209,8 @@ export class PersistenceService {
   // }
 
   async loadComplete(isMigrate = false): Promise<AppDataComplete> {
-    console.log('LOAD COMPLETE', isMigrate);
-
     const projectState = await this.project.loadState();
-    const pids = projectState ? (projectState.ids as string[]) : [DEFAULT_PROJECT_ID];
+    const pids = projectState ? (projectState.ids as string[]) : [];
     if (!pids) {
       throw new Error('Project State is broken');
     }
@@ -355,7 +227,9 @@ export class PersistenceService {
 
     return {
       ...r,
-      lastLocalSyncModelChange: this.getLastLocalSyncModelChange(),
+      lastLocalSyncModelChange:
+        await this._persistenceLocalService.loadLastSyncModelChange(),
+      lastArchiveUpdate: await this._persistenceLocalService.loadLastArchiveChange(),
     };
   }
 
@@ -381,25 +255,33 @@ export class PersistenceService {
         return await this._saveForProjectIds(data[modelCfg.appDataKey], modelCfg, true);
       }),
     );
-
-    if (typeof data.lastLocalSyncModelChange !== 'number') {
-      // not necessarily a critical error as there might be other reasons for this error to popup
-      devError('No lastLocalSyncModelChange for imported data');
-      data.lastLocalSyncModelChange = Date.now();
-    }
-
     return await Promise.all([forBase, forProject])
       .then(() => {
-        this.updateLastLocalSyncModelChange(data.lastLocalSyncModelChange as number);
+        if (typeof data.lastLocalSyncModelChange !== 'number') {
+          // not necessarily a critical error as there might be other reasons for this error to popup
+          devError('No lastLocalSyncModelChange for imported data');
+          data.lastLocalSyncModelChange = Date.now();
+        }
+
+        return Promise.all([
+          this._persistenceLocalService.updateLastSyncModelChange(
+            data.lastLocalSyncModelChange,
+          ),
+          this._persistenceLocalService.updateLastArchiveChange(
+            data.lastArchiveUpdate || 0,
+          ),
+        ]);
       })
       .finally(() => {
         this._isBlockSaving = false;
       });
   }
 
-  async clearDatabaseExceptBackup(): Promise<void> {
+  async clearDatabaseExceptBackupAndLocalOnlyModel(): Promise<void> {
     const backup: AppDataComplete = await this.loadBackup();
+    const localOnlyModel = await this._persistenceLocalService.load();
     await this._databaseService.clearDatabase();
+    await this._persistenceLocalService.save(localOnlyModel);
     if (backup) {
       await this.saveBackup(backup);
     }
@@ -419,8 +301,7 @@ export class PersistenceService {
   // TODO maybe refactor to class?
 
   // ------------------
-  private _cmBase<T>({
-    legacyKey,
+  private _cmBase<T extends Record<string, any>>({
     appDataKey,
     migrateFn = (v) => v,
     // NOTE: isSkipPush is used to use this for _cmBaseEntity as well
@@ -428,12 +309,17 @@ export class PersistenceService {
   }: PersistenceBaseModelCfg<T>): PersistenceBaseModel<T> {
     const model = {
       appDataKey,
-      loadState: (isSkipMigrate = false) =>
-        isSkipMigrate
-          ? this._loadFromDb({ dbKey: appDataKey, legacyDBKey: legacyKey })
-          : this._loadFromDb({ dbKey: appDataKey, legacyDBKey: legacyKey }).then(
-              migrateFn,
-            ),
+      loadState: async (isSkipMigrate = false) => {
+        const modelData = await this._loadFromDb({
+          dbKey: appDataKey,
+        });
+        return modelData
+          ? isSkipMigrate
+            ? modelData
+            : migrateFn(modelData)
+          : // we want to be sure there is always a valid value returned
+            DEFAULT_APP_BASE_DATA[appDataKey];
+      },
       // In case we want to check on load
       // loadState: async (isSkipMigrate = false) => {
       //   const data = isSkipMigrate
@@ -445,7 +331,7 @@ export class PersistenceService {
       //   return data;
       // },
       saveState: (
-        data: any,
+        data: T,
         {
           isDataImport = false,
           isSyncModelChange,
@@ -468,8 +354,7 @@ export class PersistenceService {
     return model;
   }
 
-  private _cmBaseEntity<S, M>({
-    legacyKey,
+  private _cmBaseEntity<S extends Record<string, any>, M>({
     appDataKey,
     modelVersion,
     reducerFn,
@@ -478,7 +363,6 @@ export class PersistenceService {
     const model = {
       // NOTE: isSkipPush is true because we do it below after
       ...this._cmBase({
-        legacyKey: legacyKey,
         appDataKey,
         modelVersion,
         migrateFn,
@@ -491,18 +375,18 @@ export class PersistenceService {
       },
 
       // NOTE: side effects are not executed!!!
-      execAction: async (action: Action): Promise<S> => {
+      execAction: async (action: Action, isSyncModelChange = false): Promise<S> => {
         const state: S = await model.loadState();
         const newState: S = reducerFn(state, action);
-        await model.saveState(newState, { isDataImport: false });
+        await model.saveState(newState, { isDataImport: false, isSyncModelChange });
         return newState;
       },
 
       // NOTE: side effects are not executed!!!
-      execActions: async (actions: Action[]): Promise<S> => {
+      execActions: async (actions: Action[], isSyncModelChange = false): Promise<S> => {
         const state: S = await model.loadState();
         const newState: S = actions.reduce((acc, act) => reducerFn(acc, act), state);
-        await model.saveState(newState, { isDataImport: false });
+        await model.saveState(newState, { isDataImport: false, isSyncModelChange });
         return newState;
       },
     };
@@ -511,9 +395,7 @@ export class PersistenceService {
     return model;
   }
 
-  // TODO maybe find a way to exec effects here as well
-  private _cmProject<S, M>({
-    legacyKey,
+  private _cmProject<S extends Record<string, any>, M>({
     appDataKey,
   }: // migrateFn = (v) => v,
   PersistenceProjectModelCfg<S, M>): PersistenceForProjectModel<S, M> {
@@ -523,12 +405,11 @@ export class PersistenceService {
         this._loadFromDb({
           dbKey: appDataKey,
           projectId,
-          legacyDBKey: this._makeLegacyProjectKey(projectId, legacyKey),
         }),
       // }).then((v) => migrateFn(v, projectId)),
       save: (
         projectId: string,
-        data: any,
+        data: Record<string, any>,
         {
           isDataImport = false,
           isSyncModelChange,
@@ -594,20 +475,6 @@ export class PersistenceService {
     return await Promise.all(promises);
   }
 
-  private _makeLegacyProjectKey(
-    projectId: string,
-    subKey: string,
-    additional?: string,
-  ): string {
-    return (
-      DB_LEGACY_PROJECT_PREFIX +
-      projectId +
-      '_' +
-      subKey +
-      (additional ? '_' + additional : '')
-    );
-  }
-
   // DATA STORAGE INTERFACE
   // ---------------------
   private _getIDBKey(dbKey: AllowedDBKeys, projectId?: string): string {
@@ -622,7 +489,7 @@ export class PersistenceService {
     isSyncModelChange = false,
   }: {
     dbKey: AllowedDBKeys;
-    data: any;
+    data: Record<string, any>;
     projectId?: string;
     isDataImport?: boolean;
     isSyncModelChange?: boolean;
@@ -631,10 +498,15 @@ export class PersistenceService {
       const idbKey = this._getIDBKey(dbKey, projectId);
       this._store.dispatch(saveToDb({ dbKey, data }));
       const r = await this._databaseService.save(idbKey, data);
+      const now = Date.now();
 
       if (isSyncModelChange) {
-        this.updateLastLocalSyncModelChange();
+        await this._persistenceLocalService.updateLastSyncModelChange(now);
       }
+      if (dbKey === 'taskArchive' || dbKey === 'archivedProjects') {
+        await this._persistenceLocalService.updateLastArchiveChange(now);
+      }
+
       this.onAfterSave$.next({
         appDataKey: dbKey,
         data,
@@ -670,11 +542,9 @@ export class PersistenceService {
   }
 
   private async _loadFromDb({
-    legacyDBKey,
     dbKey,
     projectId,
   }: {
-    legacyDBKey: string;
     dbKey: AllowedDBKeys;
     projectId?: string;
   }): Promise<any> {
@@ -682,10 +552,6 @@ export class PersistenceService {
     // NOTE: too much clutter
     // this._store.dispatch(loadFromDb({dbKey}));
     // TODO remove legacy stuff
-    return (
-      (await this._databaseService.load(idbKey)) ||
-      (await this._databaseService.load(legacyDBKey)) ||
-      undefined
-    );
+    return (await this._databaseService.load(idbKey)) || undefined;
   }
 }

@@ -1,4 +1,4 @@
-import { Injectable } from '@angular/core';
+import { Injectable, inject } from '@angular/core';
 import { GithubCfg } from './github.model';
 import { SnackService } from '../../../../core/snack/snack.service';
 import {
@@ -10,7 +10,7 @@ import {
 } from '@angular/common/http';
 import { GITHUB_API_BASE_URL } from './github.const';
 import { Observable, ObservableInput, of, throwError } from 'rxjs';
-import { GithubIssueSearchResult, GithubOriginalIssue } from './github-api-responses';
+import { GithubIssueSearchResult } from './github-api-responses';
 import { catchError, filter, map, switchMap } from 'rxjs/operators';
 import {
   mapGithubGraphQLSearchResult,
@@ -34,7 +34,8 @@ const BASE = GITHUB_API_BASE_URL;
   providedIn: 'root',
 })
 export class GithubApiService {
-  constructor(private _snackService: SnackService, private _http: HttpClient) {}
+  private _snackService = inject(SnackService);
+  private _http = inject(HttpClient);
 
   getById$(
     issueId: number,
@@ -70,19 +71,29 @@ export class GithubApiService {
     searchText: string,
     cfg: GithubCfg,
     isSearchAllGithub: boolean = false,
-  ): Observable<SearchResultItem[]> {
+  ): Observable<SearchResultItem<'GITHUB'>[]> {
+    return this.searchIssueForRepoNoMap$(searchText, cfg, isSearchAllGithub).pipe(
+      map((issues: GithubIssueReduced[]) =>
+        issues.map((issue) => mapGithubIssueToSearchResult(issue)),
+      ),
+    );
+  }
+
+  searchIssueForRepoNoMap$(
+    searchText: string,
+    cfg: GithubCfg,
+    isSearchAllGithub: boolean = false,
+  ): Observable<GithubIssueReduced[]> {
     const repoQuery = isSearchAllGithub ? '' : `+repo:${cfg.repo}`;
 
     return this._sendRequest$(
       {
-        url: `${BASE}search/issues?q=${encodeURI(searchText + repoQuery)}`,
+        url: `${BASE}search/issues?q=${encodeURIComponent(searchText) + encodeURI(repoQuery)}`,
       },
       cfg,
     ).pipe(
       map((res: GithubIssueSearchResult) => {
-        return res && res.items
-          ? res.items.map(mapGithubIssue).map(mapGithubIssueToSearchResult)
-          : [];
+        return res && res.items ? res.items.map(mapGithubIssue) : [];
       }),
     );
   }
@@ -98,37 +109,12 @@ export class GithubApiService {
     );
   }
 
-  getLast100IssuesForRepo$(cfg: GithubCfg): Observable<GithubIssueReduced[]> {
-    const repo = cfg.repo;
-    const assigneeFilter = cfg.filterIssuesAssignedToMe
-      ? `&assignee=${cfg.filterUsername}`
-      : '';
-
-    // NOTE: alternate approach (but no caching :( )
-    // return this._sendRequest$({
-    //   url: `${BASE}search/issues?q=${encodeURI(`+repo:${cfg.repo}`)}`
-    // }).pipe(
-    //   tap(console.log),
-    //   map((res: GithubIssueSearchResult) => res && res.items
-    //     ? res && res.items.map(mapGithubIssue)
-    //     : []),
-    // );
-    return this._sendRequest$(
-      {
-        url: `${BASE}repos/${repo}/issues?per_page=100&sort=updated${assigneeFilter}`,
-      },
-      cfg,
-    ).pipe(
-      map((issues: GithubOriginalIssue[]) => (issues ? issues.map(mapGithubIssue) : [])),
-    );
-  }
-
   getImportToBacklogIssuesFromGraphQL(cfg: GithubCfg): Observable<GithubIssueReduced[]> {
     const split: any = cfg.repo?.split('/');
     const owner = encodeURIComponent(split[0]);
     const repo = encodeURIComponent(split[1]);
-    const assigneeFilter = cfg.filterIssuesAssignedToMe
-      ? `, assignee: "${cfg.filterUsername}"`
+    const assigneeFilter = cfg.backlogQuery
+      ? `, assignee: "${cfg.filterUsernameForIssueUpdates}"`
       : '';
 
     return this.graphQl$(

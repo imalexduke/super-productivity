@@ -4,6 +4,7 @@ import { MODEL_VERSION_KEY } from '../../app.constants';
 export enum SimpleCounterType {
   StopWatch = 'StopWatch',
   ClickCounter = 'ClickCounter',
+  RepeatedCountdownReminder = 'RepeatedCountdownReminder',
 }
 
 export interface SimpleCounterCfgFields {
@@ -13,12 +14,14 @@ export interface SimpleCounterCfgFields {
   title: string;
   isEnabled: boolean;
   icon: string | null;
-  iconOn?: string;
   type: SimpleCounterType;
+  isTrackStreaks: boolean;
+  streakMinValue: number;
+  streakWeekDays: { [key: number]: boolean };
 
   // adv cfg
-  triggerOnActions: string[];
-  triggerOffActions?: string[];
+  // repeated countdown reminder
+  countdownDuration?: number;
 }
 
 export interface SimpleCounterCopy extends SimpleCounterCfgFields {

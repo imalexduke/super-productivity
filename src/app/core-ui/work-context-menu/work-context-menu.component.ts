@@ -1,89 +1,93 @@
-import { ChangeDetectionStrategy, Component, Input } from '@angular/core';
+import { ChangeDetectionStrategy, Component, inject, Input } from '@angular/core';
 import { WorkContextType } from '../../features/work-context/work-context.model';
 import { T } from 'src/app/t.const';
 import { TODAY_TAG } from '../../features/tag/tag.const';
-import { from, Observable, of } from 'rxjs';
 import { DialogConfirmComponent } from '../../ui/dialog-confirm/dialog-confirm.component';
 import { MatDialog } from '@angular/material/dialog';
 import { TagService } from '../../features/tag/tag.service';
-import { filter, first, switchMap, take, tap } from 'rxjs/operators';
-import { Tag } from '../../features/tag/tag.model';
+import { first } from 'rxjs/operators';
 import { WorkContextService } from '../../features/work-context/work-context.service';
-import { Router } from '@angular/router';
-import { Project } from '../../features/project/project.model';
+import { Router, RouterLink, RouterModule } from '@angular/router';
+
+import { ProjectService } from '../../features/project/project.service';
+import { MatMenuItem } from '@angular/material/menu';
+import { TranslatePipe } from '@ngx-translate/core';
+import { MatIcon } from '@angular/material/icon';
 
 @Component({
   selector: 'work-context-menu',
   templateUrl: './work-context-menu.component.html',
   styleUrls: ['./work-context-menu.component.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush,
+  imports: [RouterLink, RouterModule, MatMenuItem, TranslatePipe, MatIcon],
 })
 export class WorkContextMenuComponent {
-  @Input() project!: Project;
-  @Input() contextId?: string;
+  private _matDialog = inject(MatDialog);
+  private _tagService = inject(TagService);
+  private _projectService = inject(ProjectService);
+  private _workContextService = inject(WorkContextService);
+  private _router = inject(Router);
+
+  // TODO: Skipped for migration because:
+  //  This input is used in a control flow expression (e.g. `@if` or `*ngIf`)
+  //  and migrating would break narrowing currently.
+  @Input() contextId!: string;
   T: typeof T = T;
   TODAY_TAG_ID: string = TODAY_TAG.id as string;
   isForProject: boolean = true;
   base: string = 'project';
 
-  constructor(
-    private _matDialog: MatDialog,
-    private _tagService: TagService,
-    private _workContextService: WorkContextService,
-    private _router: Router,
-  ) {}
-
+  // TODO: Skipped for migration because:
+  //  Accessor inputs cannot be migrated as they are too complex.
   @Input('contextType') set contextTypeSet(v: WorkContextType) {
     this.isForProject = v === WorkContextType.PROJECT;
     this.base = this.isForProject ? 'project' : 'tag';
   }
 
-  // TODO move flow to dialog as async wont't work here
-  deleteTag(): void {
-    // NOTE: in this particular case we don't want to unsubscribe, since this all should still
-    // happen after the menu is hidden
-    this._confirmTagDelete()
-      .pipe(
-        filter((isDelete) => isDelete && !!this.contextId),
-        switchMap(() =>
-          this._workContextService.activeWorkContextTypeAndId$.pipe(take(1)),
-        ),
-        tap(({ activeId }) => console.log(activeId, this.contextId)),
-        switchMap(({ activeId }) =>
-          activeId === this.contextId ? from(this._router.navigateByUrl('/')) : of(true),
-        ),
-      )
-      .subscribe(() => {
-        if (this.contextId) {
-          this._tagService.removeTag(this.contextId);
-        }
-      });
+  async deleteTag(): Promise<void> {
+    const tag = await this._tagService
+      .getTagById$(this.contextId)
+      .pipe(first())
+      .toPromise();
+    const isConfirmed = await this._matDialog
+      .open(DialogConfirmComponent, {
+        restoreFocus: true,
+        data: {
+          message: T.F.TAG.D_DELETE.CONFIRM_MSG,
+          translateParams: { tagName: tag.title },
+        },
+      })
+      .afterClosed()
+      .toPromise();
+
+    if (isConfirmed) {
+      const activeId = this._workContextService.activeWorkContextId;
+      if (activeId === this.contextId) {
+        await this._router.navigateByUrl('/');
+      }
+      this._tagService.removeTag(this.contextId);
+    }
   }
 
-  private _confirmTagDelete(): Observable<boolean> {
-    if (!this.contextId) {
-      throw new Error('No context id');
+  async deleteProject(): Promise<void> {
+    const project = await this._projectService.getByIdOnce$(this.contextId).toPromise();
+    const isConfirmed = await this._matDialog
+      .open(DialogConfirmComponent, {
+        restoreFocus: true,
+        data: {
+          message: T.F.PROJECT.D_DELETE.MSG,
+          translateParams: { title: project.title },
+        },
+      })
+      .afterClosed()
+      .toPromise();
+
+    if (isConfirmed) {
+      const activeId = this._workContextService.activeWorkContextId;
+      if (activeId === this.contextId) {
+        await this._router.navigateByUrl('/');
+      }
+      this._projectService.remove(project);
     }
-
-    return this._tagService.getTagById$(this.contextId).pipe(
-      first(),
-      tap(() => console.log('TID')),
-      switchMap((tag: Tag) => {
-        const obs = this._matDialog
-          .open(DialogConfirmComponent, {
-            restoreFocus: true,
-            data: {
-              message: T.F.TAG.D_DELETE.CONFIRM_MSG,
-              translateParams: { tagName: tag.title },
-            },
-          })
-          .afterClosed()
-          .pipe(tap(() => console.log('AAA')));
-        obs.subscribe((v) => console.log(`obs`, v));
-
-        return obs;
-      }),
-      tap(() => console.log('XXX')),
-    );
   }
 }

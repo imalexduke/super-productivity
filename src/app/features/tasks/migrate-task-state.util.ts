@@ -1,9 +1,7 @@
 import { Dictionary } from '@ngrx/entity';
 import { Task, TaskArchive, TaskCopy, TaskState } from './task.model';
-import { GITHUB_TYPE } from '../issue/issue.const';
-import { MODEL_VERSION_KEY, WORKLOG_DATE_STR_FORMAT } from '../../app.constants';
-import * as moment from 'moment';
-import { convertToWesternArabic } from '../../util/numeric-converter';
+import { GITHUB_TYPE, ICAL_TYPE } from '../issue/issue.const';
+import { MODEL_VERSION_KEY } from '../../app.constants';
 import { isMigrateModel } from '../../util/model-version';
 import { MODEL_VERSION } from '../../core/model-version';
 
@@ -19,7 +17,7 @@ export const migrateTaskState = (taskState: TaskState, modelType = 'Task'): Task
   });
 
   Object.keys(taskEntities).forEach((key) => {
-    taskEntities[key] = _taskEntityMigrations(taskEntities[key] as TaskCopy);
+    taskEntities[key] = _taskEntityMigrations(taskEntities[key] as TaskCopy, taskState);
   });
 
   return {
@@ -30,22 +28,67 @@ export const migrateTaskState = (taskState: TaskState, modelType = 'Task'): Task
 };
 
 export const migrateTaskArchiveState = (taskArchiveState: TaskArchive): TaskArchive => {
+  // @ts-ignore
   return migrateTaskState(taskArchiveState as TaskState, 'Task Archive') as TaskArchive;
 };
 
-const _taskEntityMigrations = (task: TaskCopy): TaskCopy => {
+const _taskEntityMigrations = (task: TaskCopy, taskState: TaskState): TaskCopy => {
   task = _addNewIssueFields(task);
   task = _makeNullAndArraysConsistent(task);
   task = _replaceLegacyGitType(task);
   task = _addTagIds(task);
   task = _deleteUnusedFields(task);
-  task = _convertToWesternArabicDateKeys(task);
   task = _updateUndefinedNoteFields(task);
+  task = _updateTimeEstimate(task, taskState);
+  task = _updateIssueCalendarToIcal(task);
+  task = _removeLegacyGitLabIssueData(task);
   return task;
+};
+
+const _removeLegacyGitLabIssueData = (task: Task): Task => {
+  return task.issueType === 'GITLAB' &&
+    (typeof task.issueId !== 'string' || !task.issueId.includes('#'))
+    ? {
+        ...task,
+        issueId: null,
+        issueType: null,
+        issueWasUpdated: null,
+        issueLastUpdated: null,
+        issueAttachmentNr: null,
+        issuePoints: null,
+        issueTimeTracked: null,
+      }
+    : task;
+};
+
+const _updateIssueCalendarToIcal = (task: Task): Task => {
+  return task.issueType === ('CALENDAR' as any)
+    ? { ...task, issueType: ICAL_TYPE }
+    : task;
 };
 
 const _updateUndefinedNoteFields = (task: Task): Task => {
   return task.notes !== undefined ? task : { ...task, notes: '' };
+};
+
+const _updateTimeEstimate = (task: Task, taskState: TaskState): Task => {
+  const getTotalEstimate = (): number => {
+    const subTasks = task.subTaskIds.map((id) => taskState.entities[id]) as TaskCopy[];
+    return subTasks && subTasks.length > 0
+      ? subTasks.reduce(
+          (acc: number, st: Task) =>
+            acc + (st.isDone ? 0 : Math.max(0, st.timeEstimate - st.timeSpent)),
+          0,
+        )
+      : 0;
+  };
+
+  return task.subTaskIds.length > 0
+    ? {
+        ...task,
+        timeEstimate: getTotalEstimate(),
+      }
+    : task;
 };
 
 const _addTagIds = (task: Task): Task => {
@@ -74,6 +117,8 @@ const _addNewIssueFields = (task: Task): Task => {
           issueLastUpdated: null,
           // @ts-ignore
           issueWasUpdated: null,
+          // @ts-ignore
+          issueProviderId: null,
           ...task,
         };
   } else {
@@ -84,36 +129,6 @@ const _addNewIssueFields = (task: Task): Task => {
 const _replaceLegacyGitType = (task: Task): Task => {
   const issueType = task.issueType as string;
   return issueType === LEGACY_GITHUB_TYPE ? { ...task, issueType: GITHUB_TYPE } : task;
-};
-
-const _convertToWesternArabicDateKeys = (task: Task): Task => {
-  return task.timeSpentOnDay
-    ? {
-        ...task,
-        timeSpentOnDay: Object.keys(task.timeSpentOnDay).reduce((acc, dateKey) => {
-          const date = moment(convertToWesternArabic(dateKey));
-          if (!date.isValid()) {
-            throw new Error(
-              'Cannot migrate invalid non western arabic date string ' + dateKey,
-            );
-          }
-          const westernArabicKey = date.locale('en').format(WORKLOG_DATE_STR_FORMAT);
-
-          const totalTimeSpentOnDay = Object.keys(task.timeSpentOnDay)
-            .filter((key) => {
-              return key === westernArabicKey && westernArabicKey !== dateKey;
-            })
-            .reduce((tot, val) => {
-              return tot + task.timeSpentOnDay[val];
-            }, task.timeSpentOnDay[dateKey]);
-
-          return {
-            ...acc,
-            [westernArabicKey]: totalTimeSpentOnDay,
-          };
-        }, {}),
-      }
-    : task;
 };
 
 const _deleteUnusedFields = (task: Task): Task => {
@@ -153,6 +168,7 @@ const _makeNullAndArraysConsistent = (task: Task): Task => {
     issueLastUpdated: task.issueLastUpdated ?? null,
     issueAttachmentNr: task.issueAttachmentNr ?? null,
     issuePoints: task.issuePoints ?? null,
+    issueTimeTracked: task.issueTimeTracked ?? null,
   };
 };
 

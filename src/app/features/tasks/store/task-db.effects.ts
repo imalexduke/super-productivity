@@ -1,16 +1,19 @@
-import { Injectable } from '@angular/core';
+import { Injectable, inject } from '@angular/core';
 import { Actions, createEffect, ofType } from '@ngrx/effects';
 import {
+  __updateMultipleTaskSimple,
   addSubTask,
   addTask,
   addTimeSpent,
   convertToMainTask,
-  deleteTasks,
   deleteTask,
+  deleteTasks,
   moveSubTask,
   moveSubTaskDown,
+  moveSubTaskToBottom,
+  moveSubTaskToTop,
   moveSubTaskUp,
-  moveToArchive,
+  moveToArchive_,
   moveToOtherProject,
   removeTagsForAllTasks,
   reScheduleTask,
@@ -24,8 +27,6 @@ import {
   updateTask,
   updateTaskTags,
   updateTaskUi,
-  moveSubTaskToTop,
-  moveSubTaskToBottom,
 } from './task.actions';
 import { select, Store } from '@ngrx/store';
 import { tap, withLatestFrom } from 'rxjs/operators';
@@ -39,9 +40,15 @@ import {
   deleteTaskAttachment,
   updateTaskAttachment,
 } from '../task-attachment/task-attachment.actions';
+import { PlannerActions } from '../../planner/store/planner.actions';
+import { deleteProject } from '../../project/store/project.actions';
 
 @Injectable()
 export class TaskDbEffects {
+  private _actions$ = inject(Actions);
+  private _store$ = inject<Store<any>>(Store);
+  private _persistenceService = inject(PersistenceService);
+
   updateTask$: any = createEffect(
     () =>
       this._actions$.pipe(
@@ -49,7 +56,6 @@ export class TaskDbEffects {
           addTask,
           restoreTask,
           addTimeSpent,
-          unScheduleTask,
           deleteTask,
           deleteTasks,
           undoDeleteTask,
@@ -58,6 +64,7 @@ export class TaskDbEffects {
           // setCurrentTask,
           // unsetCurrentTask,
           updateTask,
+          __updateMultipleTaskSimple,
           updateTaskTags,
           removeTagsForAllTasks,
           moveSubTask,
@@ -65,7 +72,7 @@ export class TaskDbEffects {
           moveSubTaskDown,
           moveSubTaskToTop,
           moveSubTaskToBottom,
-          moveToArchive,
+          moveToArchive_,
           moveToOtherProject,
           toggleStart,
           roundTimeSpentForDay,
@@ -82,6 +89,14 @@ export class TaskDbEffects {
 
           // RELATED ACTIONS
           addTaskRepeatCfgToTask,
+
+          // PLANNER
+          PlannerActions.transferTask,
+          PlannerActions.moveBeforeTask,
+          PlannerActions.planTaskForDay,
+
+          // PROJECT
+          deleteProject,
         ),
         withLatestFrom(this._store$.pipe(select(selectTaskFeatureState))),
         tap(([, taskState]) => this._saveToLs(taskState, true)),
@@ -98,12 +113,6 @@ export class TaskDbEffects {
       ),
     { dispatch: false },
   );
-
-  constructor(
-    private _actions$: Actions,
-    private _store$: Store<any>,
-    private _persistenceService: PersistenceService,
-  ) {}
 
   // @debounce(50)
   private _saveToLs(taskState: TaskState, isSyncModelChange: boolean = false): void {

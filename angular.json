@@ -20,13 +20,14 @@
       },
       "architect": {
         "build": {
-          "builder": "@angular-devkit/build-angular:browser",
+          "builder": "@angular-devkit/build-angular:application",
           "options": {
             "aot": true,
-            "outputPath": "dist",
+            "outputPath": {
+              "base": "dist"
+            },
             "index": "src/index.html",
-            "main": "src/main.ts",
-            "polyfills": "src/polyfills.ts",
+            "polyfills": ["src/polyfills.ts"],
             "tsConfig": "src/tsconfig.app.json",
             "preserveSymlinks": true,
             "assets": [
@@ -37,7 +38,19 @@
             ],
             "styles": ["src/styles.scss"],
             "scripts": [],
-            "webWorkerTsConfig": "src/tsconfig.worker.json"
+            "webWorkerTsConfig": "src/tsconfig.worker.json",
+            "browser": "src/main.ts",
+            "stylePreprocessorOptions": {
+              "includePaths": ["."],
+              "sass": {
+                "silenceDeprecations": [
+                  "mixed-decls",
+                  "color-functions",
+                  "global-builtin",
+                  "import"
+                ]
+              }
+            }
           },
           "configurations": {
             "development": {
@@ -47,14 +60,12 @@
                   "maximumWarning": "6kb"
                 }
               ],
-              "buildOptimizer": false,
               "optimization": false,
-              "vendorChunk": true,
               "extractLicenses": false,
               "sourceMap": true,
               "namedChunks": false,
               "aot": false,
-              "serviceWorker": true
+              "serviceWorker": "ngsw-config.json"
             },
             "production": {
               "baseHref": "",
@@ -83,9 +94,7 @@
               "namedChunks": false,
               "aot": true,
               "extractLicenses": true,
-              "vendorChunk": false,
-              "buildOptimizer": true,
-              "serviceWorker": false
+              "serviceWorker": "ngsw-config.json"
             },
             "productionWeb": {
               "budgets": [
@@ -113,9 +122,7 @@
               "namedChunks": false,
               "aot": true,
               "extractLicenses": true,
-              "vendorChunk": false,
-              "buildOptimizer": true,
-              "serviceWorker": true
+              "serviceWorker": "ngsw-config.json"
             },
             "stage": {
               "baseHref": "",
@@ -144,8 +151,6 @@
               "namedChunks": false,
               "aot": true,
               "extractLicenses": true,
-              "vendorChunk": false,
-              "buildOptimizer": true,
               "serviceWorker": false
             },
             "stageWeb": {
@@ -174,24 +179,22 @@
               "namedChunks": false,
               "aot": true,
               "extractLicenses": true,
-              "vendorChunk": false,
-              "buildOptimizer": true,
-              "serviceWorker": true
+              "serviceWorker": "ngsw-config.json"
             }
           }
         },
         "serve": {
           "builder": "@angular-devkit/build-angular:dev-server",
           "options": {
-            "browserTarget": "sp2:build",
-            "open": false
+            "open": false,
+            "buildTarget": "sp2:build"
           },
           "configurations": {
             "production": {
-              "browserTarget": "sp2:build:production"
+              "buildTarget": "sp2:build:production"
             },
             "development": {
-              "browserTarget": "sp2:build:development"
+              "buildTarget": "sp2:build:development"
             }
           },
           "defaultConfiguration": "development"
@@ -199,7 +202,7 @@
         "extract-i18n": {
           "builder": "@angular-devkit/build-angular:extract-i18n",
           "options": {
-            "browserTarget": "sp2:build"
+            "buildTarget": "sp2:build"
           }
         },
         "test": {
@@ -218,7 +221,13 @@
         "lint": {
           "builder": "@angular-eslint/builder:lint",
           "options": {
-            "lintFilePatterns": ["src/**/*.ts", "src/**/*.html"]
+            "cache": true,
+            "lintFilePatterns": [
+              "src/**/*.ts",
+              "src/**/*.html",
+              "e2e/**/*.ts",
+              "electron/**/*.ts"
+            ]
           }
         }
       }

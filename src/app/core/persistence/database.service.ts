@@ -1,5 +1,4 @@
-import { Injectable } from '@angular/core';
-import { ElectronService } from '../electron/electron.service';
+import { Injectable, inject } from '@angular/core';
 import { IS_ELECTRON } from '../../app.constants';
 import { devError } from '../../util/dev-error';
 import { TranslateService } from '@ngx-translate/core';
@@ -12,6 +11,10 @@ import { AndroidDbAdapterService } from './android-db-adapter.service';
   providedIn: 'root',
 })
 export class DatabaseService {
+  private _translateService = inject(TranslateService);
+  private _indexedDbAdapterService = inject(IndexedDBAdapterService);
+  private _androidDbAdapterService = inject(AndroidDbAdapterService);
+
   private _lastParams?: { a: string; key?: string; data?: unknown };
   // private _adapter: DBAdapter =
   //   IS_ANDROID_WEB_VIEW && androidInterface.saveToDbNew && androidInterface.loadFromDb
@@ -19,12 +22,8 @@ export class DatabaseService {
   //     : this._indexedDbAdapterService;
   private _adapter: DBAdapter = this._indexedDbAdapterService;
 
-  constructor(
-    private _electronService: ElectronService,
-    private _translateService: TranslateService,
-    private _indexedDbAdapterService: IndexedDBAdapterService,
-    private _androidDbAdapterService: AndroidDbAdapterService,
-  ) {
+  constructor() {
+    this._adapter = this._indexedDbAdapterService;
     this._init().then();
   }
 
@@ -40,6 +39,8 @@ export class DatabaseService {
 
   async save(key: string, data: unknown): Promise<unknown> {
     this._lastParams = { a: 'save', key, data };
+    // disable saving during testing
+    // return Promise.resolve();
     try {
       return await this._adapter.save(key, data);
     } catch (e) {
@@ -76,7 +77,6 @@ export class DatabaseService {
       console.error('_lastParams', this._lastParams);
       console.error(e);
       alert('DB INIT Error');
-      // TODO fix typing issue
       throw new Error(e as any);
     }
   }
@@ -100,8 +100,8 @@ export class DatabaseService {
 
   private _restartApp(): void {
     if (IS_ELECTRON) {
-      this._electronService.remote.app.relaunch();
-      this._electronService.remote.app.exit(0);
+      window.ea.relaunch();
+      window.ea.exit(0);
     } else {
       window.location.reload();
     }

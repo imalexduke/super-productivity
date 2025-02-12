@@ -1,10 +1,8 @@
 import { Pipe, PipeTransform } from '@angular/core';
-import * as moment from 'moment';
+import moment from 'moment';
 import { stringToMs } from './string-to-ms.pipe';
 
-@Pipe({
-  name: 'durationFromString',
-})
+@Pipe({ name: 'durationFromString' })
 export class DurationFromStringPipe implements PipeTransform {
   transform: (value: any, ...args: any[]) => any = durationFromString;
 }

@@ -10,9 +10,22 @@
   display: flex;
   flex-direction: column;
   height: 100%;
+  -webkit-app-region: no-drag !important;
 }
 
-header {
+.mac-os-drag-bar {
+  -webkit-app-region: drag;
+  height: 50px;
+  width: 160px;
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 0;
+  display: none;
+
+  :host-context(.isMac) & {
+    display: block;
+  }
 }
 
 main {
@@ -23,7 +36,12 @@ main {
   justify-content: center;
   align-items: center;
   flex-direction: column;
+}
+
+.scroll-container {
   overflow: auto;
+  max-height: 100%;
+  width: 100%;
 }
 
 .close-btn {

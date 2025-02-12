@@ -1,8 +1,7 @@
-import { Injectable } from '@angular/core';
+import { Injectable, inject } from '@angular/core';
 import { TranslateService } from '@ngx-translate/core';
-import { DateTimeAdapter } from 'ngx-date-time-picker-schedule';
 import { DateAdapter } from '@angular/material/core';
-import * as moment from 'moment';
+import moment from 'moment';
 import {
   AUTO_SWITCH_LNGS,
   LanguageCode,
@@ -16,6 +15,10 @@ import { DEFAULT_GLOBAL_CONFIG } from 'src/app/features/config/default-global-co
 
 @Injectable({ providedIn: 'root' })
 export class LanguageService {
+  private _translateService = inject(TranslateService);
+  private _dateAdapter = inject<DateAdapter<unknown>>(DateAdapter);
+  private _globalConfigService = inject(GlobalConfigService);
+
   // I think a better approach is to add a field in every [lang].json file to specify the direction of the language
   private isRTL: BehaviorSubject<boolean> = new BehaviorSubject<boolean>(false);
   isLangRTL: Observable<boolean> = this.isRTL.asObservable();
@@ -23,19 +26,19 @@ export class LanguageService {
   // Temporary solution for knowing the rtl languages
   private readonly rtlLanguages: LanguageCode[] = RTL_LANGUAGES;
 
-  constructor(
-    private _translateService: TranslateService,
-    private _dateTimeAdapter: DateTimeAdapter<unknown>,
-    private _dateAdapter: DateAdapter<unknown>,
-    private _globalConfigService: GlobalConfigService,
-  ) {
+  constructor() {
     this._initMonkeyPatchFirstDayOfWeek();
   }
 
   setLng(lng: LanguageCode): void {
-    if (lng) {
+    if (lng && Object.values(LanguageCode).includes(lng)) {
       this._setFn(lng);
     } else {
+      if (lng) {
+        console.error('Invalid language code', lng);
+      } else {
+        console.warn('No language code provided');
+      }
       this.setFromBrowserLngIfAutoSwitchLng();
     }
   }
@@ -76,7 +79,6 @@ export class LanguageService {
     moment.locale(momLng);
 
     this._dateAdapter.setLocale(momLng);
-    this._dateTimeAdapter.setLocale(momLng);
   }
 
   private _isRTL(lng: LanguageCode): boolean {

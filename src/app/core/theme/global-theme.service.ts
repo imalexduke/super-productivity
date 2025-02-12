@@ -1,7 +1,7 @@
-import { Inject, Injectable } from '@angular/core';
+import { Injectable, inject } from '@angular/core';
 import { BodyClass, IS_ELECTRON } from '../../app.constants';
 import { IS_MAC } from '../../util/is-mac';
-import { distinctUntilChanged, map, take } from 'rxjs/operators';
+import { distinctUntilChanged, map, startWith, switchMap, take } from 'rxjs/operators';
 import { IS_TOUCH_ONLY } from '../../util/is-touch-only';
 import { MaterialCssVarsService } from 'angular-material-css-vars';
 import { DOCUMENT } from '@angular/common';
@@ -10,32 +10,45 @@ import { DomSanitizer } from '@angular/platform-browser';
 import { ChromeExtensionInterfaceService } from '../chrome-extension-interface/chrome-extension-interface.service';
 import { ThemeService as NgChartThemeService } from 'ng2-charts';
 import { GlobalConfigService } from '../../features/config/global-config.service';
-import { ElectronService } from '../electron/electron.service';
 import { WorkContextThemeCfg } from '../../features/work-context/work-context.model';
 import { WorkContextService } from '../../features/work-context/work-context.service';
-import { combineLatest, Observable } from 'rxjs';
+import { combineLatest, fromEvent, Observable, of } from 'rxjs';
 import { IS_FIREFOX } from '../../util/is-firefox';
 import { ImexMetaService } from '../../imex/imex-meta/imex-meta.service';
 import { IS_MOUSE_PRIMARY, IS_TOUCH_PRIMARY } from '../../util/is-mouse-primary';
+import { ChartConfiguration } from 'chart.js';
+import { IS_ANDROID_WEB_VIEW } from '../../util/is-android-web-view';
+import { androidInterface } from '../../features/android/android-interface';
 
 @Injectable({ providedIn: 'root' })
 export class GlobalThemeService {
-  isDarkTheme$: Observable<boolean> =
-    IS_ELECTRON && this._electronService.isMacOS
-      ? new Observable((subscriber) => {
-          subscriber.next(this._electronService.remote.nativeTheme.shouldUseDarkColors);
-          this._electronService.remote.systemPreferences.subscribeNotification(
-            'AppleInterfaceThemeChangedNotification',
-            () =>
-              subscriber.next(
-                this._electronService.remote.nativeTheme.shouldUseDarkColors,
-              ),
+  private document = inject<Document>(DOCUMENT);
+  private _materialCssVarsService = inject(MaterialCssVarsService);
+  private _workContextService = inject(WorkContextService);
+  private _globalConfigService = inject(GlobalConfigService);
+  private _matIconRegistry = inject(MatIconRegistry);
+  private _domSanitizer = inject(DomSanitizer);
+  private _chartThemeService = inject(NgChartThemeService);
+  private _chromeExtensionInterfaceService = inject(ChromeExtensionInterfaceService);
+  private _imexMetaService = inject(ImexMetaService);
+
+  isDarkTheme$: Observable<boolean> = this._globalConfigService.misc$.pipe(
+    switchMap((cfg) => {
+      switch (cfg.darkMode) {
+        case 'dark':
+          return of(true);
+        case 'light':
+          return of(false);
+        default:
+          const darkModePreference = window.matchMedia('(prefers-color-scheme: dark)');
+          return fromEvent(darkModePreference, 'change').pipe(
+            map((e: any) => e.matches),
+            startWith(darkModePreference.matches),
           );
-        })
-      : this._globalConfigService.misc$.pipe(
-          map((cfg) => cfg.isDarkMode),
-          distinctUntilChanged(),
-        );
+      }
+    }),
+    distinctUntilChanged(),
+  );
 
   backgroundImg$: Observable<string | null> = combineLatest([
     this._workContextService.currentTheme$,
@@ -47,21 +60,8 @@ export class GlobalThemeService {
     distinctUntilChanged(),
   );
 
-  constructor(
-    @Inject(DOCUMENT) private document: Document,
-    private _materialCssVarsService: MaterialCssVarsService,
-    private _electronService: ElectronService,
-    private _workContextService: WorkContextService,
-    private _globalConfigService: GlobalConfigService,
-    private _matIconRegistry: MatIconRegistry,
-    private _domSanitizer: DomSanitizer,
-    private _chartThemeService: NgChartThemeService,
-    private _chromeExtensionInterfaceService: ChromeExtensionInterfaceService,
-    private _imexMetaService: ImexMetaService,
-  ) {}
-
   init(): void {
-    // This is here to make web page reloads on non work context pages at least usable
+    // This is here to make web page reloads on non-work-context pages at least usable
     this._setBackgroundGradient(true);
     this._initIcons();
     this._initHandlersForInitialBodyClasses();
@@ -116,6 +116,12 @@ export class GlobalThemeService {
       ['repeat', 'assets/icons/repeat.svg'],
       ['gitea', 'assets/icons/gitea.svg'],
       ['redmine', 'assets/icons/redmine.svg'],
+      ['calendar', 'assets/icons/calendar.svg'],
+      ['early_on', 'assets/icons/early-on.svg'],
+      ['tomorrow', 'assets/icons/tomorrow.svg'],
+      ['next_week', 'assets/icons/next-week.svg'],
+      ['keep', 'assets/icons/keep.svg'],
+      ['keep_filled', 'assets/icons/keep-filled.svg'],
     ];
 
     icons.forEach(([name, path]) => {
@@ -160,6 +166,18 @@ export class GlobalThemeService {
       });
     }
 
+    if (IS_ANDROID_WEB_VIEW) {
+      androidInterface.isKeyboardShown$.subscribe((isShown) => {
+        console.log('isShown', isShown);
+
+        this.document.body.classList.remove(BodyClass.isAndroidKeyboardHidden);
+        this.document.body.classList.remove(BodyClass.isAndroidKeyboardShown);
+        this.document.body.classList.add(
+          isShown ? BodyClass.isAndroidKeyboardShown : BodyClass.isAndroidKeyboardHidden,
+        );
+      });
+    }
+
     this._globalConfigService.misc$.subscribe((misc) => {
       if (misc.isDisableAnimations) {
         this.document.body.classList.add(BodyClass.isDisableAnimations);
@@ -193,27 +211,34 @@ export class GlobalThemeService {
   }
 
   private _setChartTheme(isDarkTheme: boolean): void {
-    const overrides = isDarkTheme
+    const overrides: ChartConfiguration['options'] = isDarkTheme
       ? {
-          legend: {
-            labels: { fontColor: 'white' },
-          },
+          // legend: {
+          //   labels: { fontColor: 'white' },
+          // },
           scales: {
-            xAxes: [
-              {
-                ticks: { fontColor: 'white' },
-                gridLines: { color: 'rgba(255,255,255,0.1)' },
+            x: {
+              ticks: {
+                color: 'white',
               },
-            ],
-            yAxes: [
-              {
-                ticks: { fontColor: 'white' },
-                gridLines: { color: 'rgba(255,255,255,0.1)' },
+              grid: {
+                color: 'rgba(255,255,255,0.1)',
               },
-            ],
+            },
+
+            y: {
+              ticks: {
+                color: 'white',
+              },
+              grid: {
+                color: 'rgba(255,255,255,0.1)',
+              },
+            },
           },
         }
-      : {};
+      : {
+          scales: {},
+        };
     this._chartThemeService.setColorschemesOptions(overrides);
   }
 }

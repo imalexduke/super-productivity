@@ -1,11 +1,11 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
   <head>
     <meta charset="utf-8" />
     <title>Super Productivity</title>
 
     <meta
-      content="width=device-width, initial-scale=1"
+      content="width=device-width, initial-scale=1, maximum-scale=1.0, user-scalable=no"
       name="viewport"
     />
     <link
@@ -180,12 +180,18 @@ TODO configure more restrictive Content-Security-Policy
       }
 
       .app-loading .productivity-tip h2 {
-        font: 500 20px/32px Roboto, 'Helvetica Neue', sans-serif;
+        font:
+          500 20px/32px Roboto,
+          'Helvetica Neue',
+          sans-serif;
         margin: 0 0 8px !important;
       }
 
       .app-loading .productivity-tip p {
-        font: 400 14px/20px Roboto, 'Helvetica Neue', sans-serif;
+        font:
+          400 14px/20px Roboto,
+          'Helvetica Neue',
+          sans-serif;
         margin: 0 0 8px !important;
       }
 
@@ -334,6 +340,15 @@ TODO configure more restrictive Content-Security-Policy
         [
           'The path to progress is all about self evaluation',
           'From time to time you should reflect if your goals and methods serve you well.',
+        ],
+        [
+          'Embrace Progress over Achievement',
+          'It’s not about massive strides every day but the accumulation of small, incremental progress that leads to significant achievements over time.',
+        ],
+        ["You don't need more time in your day. You need to decide.", '― Seth Godin'],
+        [
+          'Decide to decide what not to do',
+          'There is only is so much time in your day (and in your life), you need to decide what you really want to do.',
         ],
       ];
       var randomIndex = Math.floor(Math.random() * productivityTips.length);

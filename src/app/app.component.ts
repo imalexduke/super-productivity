@@ -3,8 +3,9 @@ import {
   Component,
   HostBinding,
   HostListener,
+  inject,
   OnDestroy,
-  ViewChild,
+  viewChild,
   ViewContainerRef,
 } from '@angular/core';
 import { ChromeExtensionInterfaceService } from './core/chrome-extension-interface/chrome-extension-interface.service';
@@ -13,21 +14,19 @@ import { GlobalConfigService } from './features/config/global-config.service';
 import { LayoutService } from './core-ui/layout/layout.service';
 import { IPC } from '../../electron/shared-with-frontend/ipc-events.const';
 import { SnackService } from './core/snack/snack.service';
-import { IS_ELECTRON } from './app.constants';
+import { IS_ELECTRON, LanguageCode } from './app.constants';
 import { BookmarkService } from './features/bookmark/bookmark.service';
 import { expandAnimation } from './ui/animations/expand.ani';
 import { warpRouteAnimation } from './ui/animations/warp-route';
 import { combineLatest, Observable, Subscription } from 'rxjs';
 import { fadeAnimation } from './ui/animations/fade.ani';
 import { BannerService } from './core/banner/banner.service';
-import { SS } from './core/persistence/storage-keys.const';
+import { LS } from './core/persistence/storage-keys.const';
 import { BannerId } from './core/banner/banner.model';
 import { T } from './t.const';
-import { TranslateService } from '@ngx-translate/core';
 import { GlobalThemeService } from './core/theme/global-theme.service';
 import { UiHelperService } from './features/ui-helper/ui-helper.service';
 import { LanguageService } from './core/language/language.service';
-import { ElectronService } from './core/electron/electron.service';
 import { WorkContextService } from './features/work-context/work-context.service';
 import { ImexMetaService } from './imex/imex-meta/imex-meta.service';
 import { AndroidService } from './features/android/android.service';
@@ -36,12 +35,28 @@ import { isOnline$ } from './util/is-online';
 import { SyncTriggerService } from './imex/sync/sync-trigger.service';
 import { environment } from '../environments/environment';
 import { ActivatedRoute, RouterOutlet } from '@angular/router';
-import { ipcRenderer } from 'electron';
 import { TrackingReminderService } from './features/tracking-reminder/tracking-reminder.service';
-import { first, map, skip, take } from 'rxjs/operators';
+import { map, skip, take } from 'rxjs/operators';
 import { IS_MOBILE } from './util/is-mobile';
 import { FocusModeService } from './features/focus-mode/focus-mode.service';
 import { warpAnimation, warpInAnimation } from './ui/animations/warp.ani';
+import { GlobalConfigState } from './features/config/global-config.model';
+import { AddTaskBarComponent } from './features/tasks/add-task-bar/add-task-bar.component';
+import { SearchBarComponent } from './features/search-bar/search-bar.component';
+import {
+  MatSidenav,
+  MatSidenavContainer,
+  MatSidenavContent,
+} from '@angular/material/sidenav';
+import { Dir } from '@angular/cdk/bidi';
+import { SideNavComponent } from './core-ui/side-nav/side-nav.component';
+import { MainHeaderComponent } from './core-ui/main-header/main-header.component';
+import { BookmarkBarComponent } from './features/bookmark/bookmark-bar/bookmark-bar.component';
+import { BannerComponent } from './core/banner/banner/banner.component';
+import { GlobalProgressBarComponent } from './core-ui/global-progress-bar/global-progress-bar.component';
+import { FocusModeOverlayComponent } from './features/focus-mode/focus-mode-overlay/focus-mode-overlay.component';
+import { ShepherdComponent } from './features/shepherd/shepherd.component';
+import { AsyncPipe } from '@angular/common';
 
 const w = window as any;
 const productivityTip: string[] = w.productivityTips && w.productivityTips[w.randomIndex];
@@ -58,15 +73,51 @@ const productivityTip: string[] = w.productivityTips && w.productivityTips[w.ran
     warpInAnimation,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
+  imports: [
+    AddTaskBarComponent,
+    SearchBarComponent,
+    MatSidenavContainer,
+    Dir,
+    MatSidenav,
+    SideNavComponent,
+    MatSidenavContent,
+    MainHeaderComponent,
+    BookmarkBarComponent,
+    BannerComponent,
+    RouterOutlet,
+    GlobalProgressBarComponent,
+    FocusModeOverlayComponent,
+    ShepherdComponent,
+    AsyncPipe,
+  ],
 })
 export class AppComponent implements OnDestroy {
+  private _globalConfigService = inject(GlobalConfigService);
+  private _shortcutService = inject(ShortcutService);
+  private _bannerService = inject(BannerService);
+  private _snackService = inject(SnackService);
+  private _chromeExtensionInterfaceService = inject(ChromeExtensionInterfaceService);
+  private _globalThemeService = inject(GlobalThemeService);
+  private _uiHelperService = inject(UiHelperService);
+  private _languageService = inject(LanguageService);
+  private _androidService = inject(AndroidService);
+  private _bookmarkService = inject(BookmarkService);
+  private _startTrackingReminderService = inject(TrackingReminderService);
+  private _activatedRoute = inject(ActivatedRoute);
+  readonly syncTriggerService = inject(SyncTriggerService);
+  readonly imexMetaService = inject(ImexMetaService);
+  readonly workContextService = inject(WorkContextService);
+  readonly layoutService = inject(LayoutService);
+  readonly focusModeService = inject(FocusModeService);
+  readonly globalThemeService = inject(GlobalThemeService);
+
   productivityTipTitle: string = productivityTip && productivityTip[0];
   productivityTipText: string = productivityTip && productivityTip[1];
 
   @HostBinding('@.disabled') isDisableAnimations = false;
 
-  @ViewChild('notesElRef', { read: ViewContainerRef }) notesElRef?: ViewContainerRef;
-  @ViewChild('sideNavElRef', { read: ViewContainerRef }) sideNavElRef?: ViewContainerRef;
+  readonly notesElRef = viewChild('notesElRef', { read: ViewContainerRef });
+  readonly sideNavElRef = viewChild('sideNavElRef', { read: ViewContainerRef });
 
   isRTL: boolean = false;
 
@@ -83,32 +134,14 @@ export class AppComponent implements OnDestroy {
   private _subs: Subscription = new Subscription();
   private _intervalTimer?: NodeJS.Timeout;
 
-  constructor(
-    private _globalConfigService: GlobalConfigService,
-    private _shortcutService: ShortcutService,
-    private _bannerService: BannerService,
-    private _electronService: ElectronService,
-    private _snackService: SnackService,
-    private _chromeExtensionInterfaceService: ChromeExtensionInterfaceService,
-    private _translateService: TranslateService,
-    private _globalThemeService: GlobalThemeService,
-    private _uiHelperService: UiHelperService,
-    private _languageService: LanguageService,
-    private _androidService: AndroidService,
-    private _bookmarkService: BookmarkService,
-    private _startTrackingReminderService: TrackingReminderService,
-    private _activatedRoute: ActivatedRoute,
-    public readonly syncTriggerService: SyncTriggerService,
-    public readonly imexMetaService: ImexMetaService,
-    public readonly workContextService: WorkContextService,
-    public readonly layoutService: LayoutService,
-    public readonly focusModeService: FocusModeService,
-    public readonly globalThemeService: GlobalThemeService,
-  ) {
+  constructor() {
+    this._languageService.setDefault(LanguageCode.en);
+    this._languageService.setFromBrowserLngIfAutoSwitchLng();
+
     this._snackService.open({
       ico: 'lightbulb',
       config: {
-        duration: 7000,
+        duration: 14000,
       },
       msg:
         '<strong>' +
@@ -160,23 +193,17 @@ export class AppComponent implements OnDestroy {
     });
 
     if (IS_ELECTRON) {
-      (this._electronService.ipcRenderer as typeof ipcRenderer).send(IPC.APP_READY);
+      window.ea.informAboutAppReady();
       this._initElectronErrorHandler();
       this._uiHelperService.initElectron();
 
-      (this._electronService.ipcRenderer as typeof ipcRenderer).on(
-        IPC.TRANSFER_SETTINGS_REQUESTED,
-        () => {
-          (this._electronService.ipcRenderer as typeof ipcRenderer).send(
-            IPC.TRANSFER_SETTINGS_TO_ELECTRON,
-            this._globalConfigService.cfg,
-          );
-        },
-      );
+      window.ea.on(IPC.TRANSFER_SETTINGS_REQUESTED, () => {
+        window.ea.sendAppSettingsToElectron(
+          this._globalConfigService.cfg as GlobalConfigState,
+        );
+      });
     } else {
       // WEB VERSION
-      this._chromeExtensionInterfaceService.init();
-
       window.addEventListener('beforeunload', (e) => {
         const gCfg = this._globalConfigService.cfg;
         if (!gCfg) {
@@ -187,6 +214,11 @@ export class AppComponent implements OnDestroy {
           e.returnValue = '';
         }
       });
+
+      if (!IS_ANDROID_WEB_VIEW) {
+        this._chromeExtensionInterfaceService.init();
+        this._initMultiInstanceWarning();
+      }
     }
   }
 
@@ -203,43 +235,37 @@ export class AppComponent implements OnDestroy {
     ev.preventDefault();
   }
 
-  @HostListener('document:paste', ['$event'])
-  async onPaste(ev: ClipboardEvent): Promise<void> {
-    if (
-      await this.workContextService.isActiveWorkContextProject$.pipe(first()).toPromise()
-    ) {
-      this._bookmarkService.createFromPaste(ev);
-    }
-  }
-
   @HostListener('window:beforeinstallprompt', ['$event']) onBeforeInstallPrompt(
     e: any,
   ): void {
-    if (IS_ELECTRON || sessionStorage.getItem(SS.WEB_APP_INSTALL)) {
+    if (IS_ELECTRON || localStorage.getItem(LS.WEB_APP_INSTALL)) {
       return;
     }
 
     // Prevent Chrome 67 and earlier from automatically showing the prompt
     e.preventDefault();
 
-    window.setTimeout(() => {
-      this._bannerService.open({
-        id: BannerId.InstallWebApp,
-        msg: T.APP.B_INSTALL.MSG,
-        action: {
-          label: T.APP.B_INSTALL.INSTALL,
-          fn: () => {
-            e.prompt();
+    window.setTimeout(
+      () => {
+        this._bannerService.open({
+          id: BannerId.InstallWebApp,
+          msg: T.APP.B_INSTALL.MSG,
+          action: {
+            label: T.APP.B_INSTALL.INSTALL,
+            fn: () => {
+              e.prompt();
+            },
           },
-        },
-        action2: {
-          label: T.APP.B_INSTALL.IGNORE,
-          fn: () => {
-            sessionStorage.setItem(SS.WEB_APP_INSTALL, 'true');
+          action2: {
+            label: T.APP.B_INSTALL.IGNORE,
+            fn: () => {
+              localStorage.setItem(LS.WEB_APP_INSTALL, 'true');
+            },
           },
-        },
-      });
-    }, 2 * 60 * 1000);
+        });
+      },
+      2 * 60 * 1000,
+    );
   }
 
   getPage(outlet: RouterOutlet): string {
@@ -251,8 +277,41 @@ export class AppComponent implements OnDestroy {
     if (this._intervalTimer) clearInterval(this._intervalTimer);
   }
 
+  private _initMultiInstanceWarning(): void {
+    const channel = new BroadcastChannel('superProductivityTab');
+    let isOriginal = true;
+
+    enum Msg {
+      newTabOpened = 'newTabOpened',
+      alreadyOpenElsewhere = 'alreadyOpenElsewhere',
+    }
+
+    channel.postMessage(Msg.newTabOpened);
+    // note that listener is added after posting the message
+
+    channel.addEventListener('message', (msg) => {
+      if (msg.data === Msg.newTabOpened && isOriginal) {
+        // message received from 2nd tab
+        // reply to all new tabs that the website is already open
+        channel.postMessage(Msg.alreadyOpenElsewhere);
+      }
+      if (msg.data === Msg.alreadyOpenElsewhere) {
+        isOriginal = false;
+        // message received from original tab
+        // replace this with whatever logic you need
+        // NOTE: translations not ready yet
+        const t =
+          'You are running multiple instances of Super Productivity (possibly over multiple tabs). This is not recommended and might lead to data loss!!';
+        const t2 = 'Please close all other instances, before you continue!';
+        // show in two dialogs to be sure the user didn't miss it
+        alert(t);
+        alert(t2);
+      }
+    });
+  }
+
   private _initElectronErrorHandler(): void {
-    (this._electronService.ipcRenderer as typeof ipcRenderer).on(
+    window.ea.on(
       IPC.ERROR,
       (
         ev,

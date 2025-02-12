@@ -1,8 +1,7 @@
-import { ErrorHandler, Inject, Injectable, Injector } from '@angular/core';
+import { ErrorHandler, Injectable, Injector, inject } from '@angular/core';
 import { isObject } from '../../util/is-object';
 import { getErrorTxt } from '../../util/get-error-text';
 import { IS_ELECTRON } from '../../app.constants';
-import { ElectronService } from '../electron/electron.service';
 import {
   createErrorAlert,
   isHandledError,
@@ -11,19 +10,11 @@ import {
 import { saveBeforeLastErrorActionLog } from '../../util/action-logger';
 import { AppDataComplete } from '../../imex/sync/sync.model';
 import { PersistenceService } from '../persistence/persistence.service';
+import { error } from 'electron-log/renderer';
 
 @Injectable()
 export class GlobalErrorHandler implements ErrorHandler {
-  private _electronLogger: any;
-
-  constructor(
-    private _electronService: ElectronService,
-    @Inject(Injector) private injector: Injector,
-  ) {
-    if (IS_ELECTRON) {
-      this._electronLogger = this._electronService.remote.require('electron-log');
-    }
-  }
+  private injector = inject<Injector>(Injector);
 
   // TODO Cleanup this mess
   async handleError(err: any): Promise<void> {
@@ -36,21 +27,15 @@ export class GlobalErrorHandler implements ErrorHandler {
     if (!isHandledError(err)) {
       const errorStr = this._getErrorStr(err) || errStr;
       saveBeforeLastErrorActionLog();
-      createErrorAlert(
-        this._electronService,
-        errorStr,
-        simpleStack,
-        err,
-        await this._getUserData(),
-      );
+      createErrorAlert(errorStr, simpleStack, err, await this._getUserData());
     }
 
     if (IS_ELECTRON) {
-      this._electronLogger.error('Frontend Error:', err, simpleStack);
+      error('Frontend Error:', err, simpleStack);
     }
 
     const additionalLog = IS_ELECTRON
-      ? (stack: unknown) => this._electronLogger.error('Frontend Error Stack:', stack)
+      ? (stack: unknown) => error('Frontend Error Stack:', stack)
       : () => null;
 
     logAdvancedStacktrace(err, additionalLog).then();

@@ -1,11 +1,13 @@
-import { Injectable } from '@angular/core';
+import { inject, Injectable } from '@angular/core';
 import { Actions, createEffect, ofType } from '@ngrx/effects';
 import {
   concatMap,
   delay,
   filter,
   first,
+  map,
   mergeMap,
+  switchMap,
   take,
   tap,
   withLatestFrom,
@@ -25,7 +27,11 @@ import { Task, TaskArchive, TaskCopy } from '../../tasks/task.model';
 import { updateTask } from '../../tasks/store/task.actions';
 import { TaskService } from '../../tasks/task.service';
 import { TaskRepeatCfgService } from '../task-repeat-cfg.service';
-import { TaskRepeatCfg, TaskRepeatCfgState } from '../task-repeat-cfg.model';
+import {
+  TaskRepeatCfg,
+  TaskRepeatCfgCopy,
+  TaskRepeatCfgState,
+} from '../task-repeat-cfg.model';
 import { forkJoin, from, merge, of } from 'rxjs';
 import { setActiveWorkContext } from '../../work-context/store/work-context.actions';
 import { SyncTriggerService } from '../../../imex/sync/sync-trigger.service';
@@ -38,9 +44,20 @@ import { Update } from '@ngrx/entity';
 import { getDateTimeFromClockString } from '../../../util/get-date-time-from-clock-string';
 import { isToday } from '../../../util/is-today.util';
 import { DateService } from 'src/app/core/date/date.service';
+import { deleteProject } from '../../project/store/project.actions';
 
 @Injectable()
 export class TaskRepeatCfgEffects {
+  private _actions$ = inject(Actions);
+  private _taskService = inject(TaskService);
+  private _store$ = inject<Store<any>>(Store);
+  private _persistenceService = inject(PersistenceService);
+  private _dateService = inject(DateService);
+  private _taskRepeatCfgService = inject(TaskRepeatCfgService);
+  private _syncTriggerService = inject(SyncTriggerService);
+  private _syncProviderService = inject(SyncProviderService);
+  private _matDialog = inject(MatDialog);
+
   updateTaskRepeatCfgs$: any = createEffect(
     () =>
       this._actions$.pipe(
@@ -51,6 +68,9 @@ export class TaskRepeatCfgEffects {
           upsertTaskRepeatCfg,
           deleteTaskRepeatCfg,
           deleteTaskRepeatCfgs,
+
+          // PROJECT
+          deleteProject,
         ),
         withLatestFrom(this._store$.pipe(select(selectTaskRepeatCfgFeatureState))),
         tap(this._saveToLs.bind(this)),
@@ -74,7 +94,7 @@ export class TaskRepeatCfgEffects {
       concatMap(
         () =>
           this._taskRepeatCfgService
-            .getRepeatTableTasksDueForDay$(
+            .getRepeatTableTasksDueForDayIncludingOverdue$(
               Date.now() - this._dateService.startOfNextDayDiff,
             )
             .pipe(first()),
@@ -83,7 +103,7 @@ export class TaskRepeatCfgEffects {
       filter((taskRepeatCfgs) => taskRepeatCfgs && !!taskRepeatCfgs.length),
       withLatestFrom(this._taskService.currentTaskId$),
 
-      // existing tasks with sub tasks are loaded, because need to move them to the archive
+      // existing tasks with sub-tasks are loaded, because need to move them to the archive
       mergeMap(([taskRepeatCfgs, currentTaskId]) => {
         // NOTE sorting here is important
         const sorted = taskRepeatCfgs.sort(sortRepeatableTaskCfgs);
@@ -91,7 +111,6 @@ export class TaskRepeatCfgEffects {
           mergeMap((taskRepeatCfg: TaskRepeatCfg) =>
             this._taskRepeatCfgService.getActionsForTaskRepeatCfg(
               taskRepeatCfg,
-              currentTaskId,
               Date.now() - this._dateService.startOfNextDayDiff,
             ),
           ),
@@ -125,6 +144,26 @@ export class TaskRepeatCfgEffects {
         ofType(deleteTaskRepeatCfg),
         tap(({ id }) => {
           this._removeRepeatCfgFromArchiveTasks(id);
+        }),
+      ),
+    { dispatch: false },
+  );
+
+  updateTaskAfterMakingItRepeatable$: any = createEffect(
+    () =>
+      this._actions$.pipe(
+        ofType(addTaskRepeatCfgToTask),
+        switchMap(({ taskRepeatCfg, taskId }) => {
+          return this._taskService.getByIdOnce$(taskId).pipe(
+            first(),
+            map((task) => ({
+              task,
+              taskRepeatCfg,
+            })),
+          );
+        }),
+        tap(({ task, taskRepeatCfg }) => {
+          this._updateRegularTaskInstance(task, taskRepeatCfg, taskRepeatCfg);
         }),
       ),
     { dispatch: false },
@@ -169,69 +208,9 @@ export class TaskRepeatCfgEffects {
                   console.log(todayTasks, archiveTasks);
                   // NOTE: keep in mind that it's very likely that there will be only one task for today
                   // TODO update reminders if given
-                  todayTasks.forEach((task) => {
-                    // NOTE: projects can't be updated from the dialog,
-                    // if (
-                    //   typeof changes.projectId === 'string' &&
-                    //   task.projectId !== changes.projectId
-                    // ) {
-                    //   const withSubTasks = await this._taskService
-                    //     .getByIdWithSubTaskData$(task.id)
-                    //     .pipe(take(1))
-                    //     .toPromise();
-                    //   this._taskService.moveToProject(withSubTasks, changes.projectId);
-                    // }
-                    if (
-                      (changes.startTime || changes.remindAt) &&
-                      completeCfg.remindAt &&
-                      completeCfg.startTime &&
-                      isToday(task.created)
-                    ) {
-                      const dateTime = getDateTimeFromClockString(
-                        completeCfg.startTime as string,
-                        new Date(),
-                      );
-                      if (task.reminderId) {
-                        this._taskService.reScheduleTask({
-                          task,
-                          plannedAt: dateTime,
-                          remindCfg: completeCfg.remindAt,
-                          isMoveToBacklog: false,
-                        });
-                      } else {
-                        this._taskService.scheduleTask(
-                          task,
-                          dateTime,
-                          completeCfg.remindAt,
-                        );
-                      }
-                    }
-                    if (changes.tagIds) {
-                      this._taskService.updateTags(task, changes.tagIds, task.tagIds);
-                    }
-                    if (changes.title || changes.notes) {
-                      this._taskService.update(task.id, {
-                        ...(changes.title
-                          ? {
-                              title: changes.title,
-                            }
-                          : {}),
-                        ...(changes.notes
-                          ? {
-                              notes: changes.notes,
-                            }
-                          : {}),
-                      });
-                    }
-                    if (
-                      typeof changes.defaultEstimate === 'number' &&
-                      task.subTaskIds.length === 0
-                    ) {
-                      this._taskService.update(task.id, {
-                        timeEstimate: changes.defaultEstimate,
-                      });
-                    }
-                  });
+                  todayTasks.forEach((task) =>
+                    this._updateRegularTaskInstance(task, changes, completeCfg),
+                  );
 
                   const archiveUpdates: Update<TaskCopy>[] = archiveTasks.map((task) => {
                     const changesForArchiveTask: Partial<TaskCopy> = {};
@@ -278,17 +257,66 @@ export class TaskRepeatCfgEffects {
     { dispatch: false },
   );
 
-  constructor(
-    private _actions$: Actions,
-    private _taskService: TaskService,
-    private _store$: Store<any>,
-    private _persistenceService: PersistenceService,
-    private _dateService: DateService,
-    private _taskRepeatCfgService: TaskRepeatCfgService,
-    private _syncTriggerService: SyncTriggerService,
-    private _syncProviderService: SyncProviderService,
-    private _matDialog: MatDialog,
-  ) {}
+  private _updateRegularTaskInstance(
+    task: TaskCopy,
+    changes: Partial<TaskRepeatCfgCopy>,
+    completeCfg: TaskRepeatCfgCopy,
+  ): void {
+    // NOTE: projects can't be updated from the dialog,
+    // if (
+    //   typeof changes.projectId === 'string' &&
+    //   task.projectId !== changes.projectId
+    // ) {
+    //   const withSubTasks = await this._taskService
+    //     .getByIdWithSubTaskData$(task.id)
+    //     .pipe(take(1))
+    //     .toPromise();
+    //   this._taskService.moveToProject(withSubTasks, changes.projectId);
+    // }
+    if (
+      (changes.startTime || changes.remindAt) &&
+      completeCfg.remindAt &&
+      completeCfg.startTime &&
+      isToday(task.created)
+    ) {
+      const dateTime = getDateTimeFromClockString(
+        completeCfg.startTime as string,
+        new Date(),
+      );
+      if (task.reminderId) {
+        this._taskService.reScheduleTask({
+          task,
+          plannedAt: dateTime,
+          remindCfg: completeCfg.remindAt,
+          isMoveToBacklog: false,
+        });
+      } else {
+        this._taskService.scheduleTask(task, dateTime, completeCfg.remindAt);
+      }
+    }
+    if (changes.tagIds) {
+      this._taskService.updateTags(task, changes.tagIds);
+    }
+    if (changes.title || changes.notes) {
+      this._taskService.update(task.id, {
+        ...(changes.title
+          ? {
+              title: changes.title,
+            }
+          : {}),
+        ...(changes.notes
+          ? {
+              notes: changes.notes,
+            }
+          : {}),
+      });
+    }
+    if (typeof changes.defaultEstimate === 'number' && task.subTaskIds.length === 0) {
+      this._taskService.update(task.id, {
+        timeEstimate: changes.defaultEstimate,
+      });
+    }
+  }
 
   private _saveToLs([action, taskRepeatCfgState]: [Action, TaskRepeatCfgState]): void {
     this._persistenceService.taskRepeatCfg.saveState(taskRepeatCfgState, {

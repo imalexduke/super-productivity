@@ -1,10 +1,11 @@
 import {
   AfterViewChecked,
-  Attribute,
   Directive,
   ElementRef,
   forwardRef,
   HostListener,
+  inject,
+  input,
   Input,
   Renderer2,
 } from '@angular/core';
@@ -35,6 +36,8 @@ export const INPUT_DURATION_VALIDATORS: any = {
   multi: true,
 };
 
+const ZERO_VAL = '0m';
+
 /* eslint-enable */
 
 @Directive({
@@ -50,8 +53,14 @@ export const INPUT_DURATION_VALIDATORS: any = {
 export class InputDurationDirective
   implements ControlValueAccessor, Validator, AfterViewChecked
 {
-  @Input() isAllowSeconds: boolean = false;
-  @Input() isValidate: boolean = true;
+  private _elementRef = inject(ElementRef);
+  private _stringToMs = inject(StringToMsPipe);
+  private _msToString = inject(MsToStringPipe);
+  private _renderer = inject(Renderer2);
+
+  readonly isAllowSeconds = input<boolean>(false);
+  readonly isValidate = input<boolean>(true);
+  readonly isShowZeroVal = input<boolean>(true);
 
   // by the Control Value Accessor
   // @ts-ignore
@@ -65,14 +74,6 @@ export class InputDurationDirective
   private _parseValidator: ValidatorFn = this._parseValidatorFn.bind(this);
   private _validator: ValidatorFn | undefined | null;
   private _msValue: number | undefined;
-
-  constructor(
-    @Attribute('inputDuration') public inputDuration: Attribute,
-    private _elementRef: ElementRef,
-    private _stringToMs: StringToMsPipe,
-    private _msToString: MsToStringPipe,
-    private _renderer: Renderer2,
-  ) {}
 
   private _value: string | undefined;
 
@@ -89,6 +90,8 @@ export class InputDurationDirective
   }
 
   // TODO all around dirty
+  // TODO: Skipped for migration because:
+  //  Accessor inputs cannot be migrated as they are too complex.
   @Input() set ngModel(msVal: number) {
     if (msVal && msVal !== this._msValue) {
       this._msValue = msVal;
@@ -125,7 +128,7 @@ export class InputDurationDirective
 
   // ControlValueAccessor: Validator
   validate(c: AbstractControl): ValidationErrors | null {
-    return this._validator !== null && this._validator !== undefined && this.isValidate
+    return this._validator !== null && this._validator !== undefined && this.isValidate()
       ? this._validator(c)
       : null;
   }
@@ -135,15 +138,23 @@ export class InputDurationDirective
     if (!value) {
       value = '';
     }
-    const toStr = this._msToString.transform(value, this.isAllowSeconds, true);
-    this._renderer.setProperty(this._elementRef.nativeElement, 'value', toStr);
+    const toStr = this._msToString.transform(value, this.isAllowSeconds(), true);
+    this._renderer.setProperty(
+      this._elementRef.nativeElement,
+      'value',
+      this.isShowZeroVal() ? toStr || ZERO_VAL : toStr,
+    );
   }
 
   private _parseValidatorFn(): ValidationErrors | null {
     // TODO maximum dirty hackyness, but works for now :(
     if (!this._value) {
       this._msValue = this._stringToMs.transform(this._elementRef.nativeElement.value);
-      this._value = this._msToString.transform(this._msValue, this.isAllowSeconds, true);
+      this._value = this._msToString.transform(
+        this._msValue,
+        this.isAllowSeconds(),
+        true,
+      );
     }
     return this._value
       ? null

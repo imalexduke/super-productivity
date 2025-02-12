@@ -1,4 +1,4 @@
-import { Injectable } from '@angular/core';
+import { Injectable, inject } from '@angular/core';
 import { Actions, createEffect, ofType } from '@ngrx/effects';
 import { select, Store } from '@ngrx/store';
 import { concatMap, filter, first, map, switchMap, take, tap } from 'rxjs/operators';
@@ -9,20 +9,19 @@ import {
   archiveProject,
   deleteProject,
   loadProjectRelatedDataSuccess,
-  moveAllProjectBacklogTasksToTodayList,
+  moveAllProjectBacklogTasksToRegularList,
   moveProjectTaskDownInBacklogList,
   moveProjectTaskInBacklogList,
   moveProjectTaskToBacklogList,
   moveProjectTaskToBacklogListAuto,
   moveProjectTaskToBottomInBacklogList,
-  moveProjectTaskToTodayList,
-  moveProjectTaskToTodayListAuto,
+  moveProjectTaskToRegularList,
+  moveProjectTaskToRegularListAuto,
   moveProjectTaskToTopInBacklogList,
   moveProjectTaskUpInBacklogList,
   unarchiveProject,
   updateProject,
   updateProjectAdvancedCfg,
-  updateProjectIssueProviderCfg,
   updateProjectOrder,
   updateProjectWorkEnd,
   updateProjectWorkStart,
@@ -30,7 +29,6 @@ import {
 } from './project.actions';
 import { PersistenceService } from '../../../core/persistence/persistence.service';
 import { BookmarkService } from '../../bookmark/bookmark.service';
-import { NoteService } from '../../note/note.service';
 import { SnackService } from '../../../core/snack/snack.service';
 import {
   addTask,
@@ -38,12 +36,10 @@ import {
   convertToMainTask,
   deleteTask,
   deleteTasks,
-  moveToArchive,
+  moveToArchive_,
   moveToOtherProject,
   restoreTask,
-  updateTaskTags,
 } from '../../tasks/store/task.actions';
-import { ReminderService } from '../../reminder/reminder.service';
 import { ProjectService } from '../project.service';
 import { GlobalConfigService } from '../../config/global-config.service';
 import { T } from '../../../t.const';
@@ -55,14 +51,10 @@ import {
 import { WorkContextType } from '../../work-context/work-context.model';
 import { setActiveWorkContext } from '../../work-context/store/work-context.actions';
 import { Project } from '../project.model';
-import { TaskService } from '../../tasks/task.service';
-import { Task, TaskArchive, TaskState } from '../../tasks/task.model';
+import { Task, TaskArchive } from '../../tasks/task.model';
 import { unique } from '../../../util/unique';
-import { TaskRepeatCfgService } from '../../task-repeat-cfg/task-repeat-cfg.service';
-import { TODAY_TAG } from '../../tag/tag.const';
 import { EMPTY, Observable, of } from 'rxjs';
-import { TaskRepeatCfg } from '../../task-repeat-cfg/task-repeat-cfg.model';
-import { projectSelectors } from './project.selectors';
+import { selectProjectFeatureState } from './project.selectors';
 import {
   addNote,
   deleteNote,
@@ -70,9 +62,20 @@ import {
   updateNoteOrder,
 } from '../../note/store/note.actions';
 import { DateService } from 'src/app/core/date/date.service';
+import { ReminderService } from '../../reminder/reminder.service';
 
 @Injectable()
 export class ProjectEffects {
+  private _actions$ = inject(Actions);
+  private _store$ = inject<Store<any>>(Store);
+  private _snackService = inject(SnackService);
+  private _projectService = inject(ProjectService);
+  private _persistenceService = inject(PersistenceService);
+  private _bookmarkService = inject(BookmarkService);
+  private _globalConfigService = inject(GlobalConfigService);
+  private _dateService = inject(DateService);
+  private _reminderService = inject(ReminderService);
+
   syncProjectToLs$: Observable<unknown> = createEffect(
     () =>
       this._actions$.pipe(
@@ -83,7 +86,6 @@ export class ProjectEffects {
           deleteProject.type,
           updateProject.type,
           updateProjectAdvancedCfg.type,
-          updateProjectIssueProviderCfg.type,
           updateProjectWorkStart.type,
           updateProjectWorkEnd.type,
           addToProjectBreakTime.type,
@@ -95,13 +97,13 @@ export class ProjectEffects {
 
           moveProjectTaskInBacklogList.type,
           moveProjectTaskToBacklogList.type,
-          moveProjectTaskToTodayList.type,
+          moveProjectTaskToRegularList.type,
           moveProjectTaskUpInBacklogList.type,
           moveProjectTaskDownInBacklogList.type,
           moveProjectTaskToTopInBacklogList.type,
           moveProjectTaskToBottomInBacklogList.type,
           moveProjectTaskToBacklogListAuto.type,
-          moveProjectTaskToTodayListAuto.type,
+          moveProjectTaskToRegularListAuto.type,
         ),
         switchMap((a) => {
           // exclude ui only actions
@@ -151,7 +153,7 @@ export class ProjectEffects {
           deleteTask,
           moveToOtherProject,
           restoreTask,
-          moveToArchive,
+          moveToArchive_,
           convertToMainTask,
         ),
         switchMap((a) => {
@@ -166,7 +168,7 @@ export class ProjectEffects {
             case moveToOtherProject.type:
               isChange = !!a.task.projectId;
               break;
-            case moveToArchive.type:
+            case moveToArchive_.type:
               isChange = !!a.tasks.find((task) => !!task.projectId);
               break;
             case restoreTask.type:
@@ -246,16 +248,17 @@ export class ProjectEffects {
   deleteProjectRelatedData: Observable<unknown> = createEffect(
     () =>
       this._actions$.pipe(
-        ofType(deleteProject.type),
-        tap(async ({ id }) => {
+        ofType(deleteProject),
+        tap(async ({ project, allTaskIds }) => {
+          // NOTE: we also do stuff on a reducer level (probably better to handle on this level @TODO refactor)
+          const id = project.id as string;
           await this._persistenceService.removeCompleteRelatedDataForProject(id);
-          this._removeAllNonArchiveTasksForProject(id);
           this._removeAllArchiveTasksForProject(id);
-          this._removeAllRepeatingTasksForProject(id);
+          this._reminderService.removeRemindersByRelatedIds(allTaskIds);
 
           // we also might need to account for this unlikely but very nasty scenario
-          const misc = await this._globalConfigService.misc$.pipe(take(1)).toPromise();
-          if (id === misc.defaultProjectId) {
+          const cfg = await this._globalConfigService.cfg$.pipe(take(1)).toPromise();
+          if (id === cfg.misc.defaultProjectId) {
             this._globalConfigService.updateSection('misc', { defaultProjectId: null });
           }
         }),
@@ -269,7 +272,7 @@ export class ProjectEffects {
         ofType(updateProject),
         filter((a) => a.project.changes.isEnableBacklog === false),
         map((a) => {
-          return moveAllProjectBacklogTasksToTodayList({
+          return moveAllProjectBacklogTasksToRegularList({
             projectId: a.project.id as string,
           });
         }),
@@ -310,23 +313,6 @@ export class ProjectEffects {
 
   // PURE SNACKS
   // -----------
-
-  snackUpdateIssueProvider$: Observable<unknown> = createEffect(
-    () =>
-      this._actions$.pipe(
-        ofType(updateProjectIssueProviderCfg.type),
-        tap(({ issueProviderKey }) => {
-          this._snackService.open({
-            type: 'SUCCESS',
-            msg: T.F.PROJECT.S.ISSUE_PROVIDER_UPDATED,
-            translateParams: {
-              issueProviderKey,
-            },
-          });
-        }),
-      ),
-    { dispatch: false },
-  );
 
   snackUpdateBaseSettings$: Observable<unknown> = createEffect(
     () =>
@@ -372,97 +358,6 @@ export class ProjectEffects {
     { dispatch: false },
   );
 
-  moveToTodayListOnAddTodayTag: Observable<unknown> = createEffect(() =>
-    this._actions$.pipe(
-      ofType(updateTaskTags),
-      filter(
-        ({ task, newTagIds }) => !!task.projectId && newTagIds.includes(TODAY_TAG.id),
-      ),
-      concatMap(({ task, newTagIds }) =>
-        this._projectService.getByIdOnce$(task.projectId as string).pipe(
-          map((project) => ({
-            project,
-            task,
-            newTagIds,
-          })),
-        ),
-      ),
-      filter(({ project }) => !project.taskIds.includes(TODAY_TAG.id)),
-      map(({ task, newTagIds, project }) =>
-        moveProjectTaskToTodayListAuto({
-          projectId: project.id,
-          taskId: task.id,
-          isMoveToTop: false,
-        }),
-      ),
-    ),
-  );
-
-  // @Effect()
-  // moveToBacklogOnRemoveTodayTag: Observable<unknown> = this._actions$.pipe(
-  //   ofType(updateTaskTags),
-  //   filter((action: UpdateTaskTags) =>
-  //     task.projectId &&
-  //     oldTagIds.includes(TODAY_TAG.id)
-  //   ),
-  //   concatMap((action) => this._projectService.getByIdOnce$(task.projectId).pipe(
-  //     map((project) => ({
-  //       project,
-  //       p: action.payload,
-  //     }))
-  //   )),
-  //   filter(({project}) => !project.taskIds.includes(TODAY_TAG.id)),
-  //   map(({p, project}) => moveTaskToTodayList({
-  //     workContextId: project.id,
-  //     taskId: p.task.id,
-  //     newOrderedIds: [p.task.id, ...project.backlogTaskIds],
-  //     src: 'DONE',
-  //     target: 'BACKLOG'
-  //   })),
-  // );
-
-  constructor(
-    private _actions$: Actions,
-    private _store$: Store<any>,
-    private _snackService: SnackService,
-    private _projectService: ProjectService,
-    private _persistenceService: PersistenceService,
-    private _bookmarkService: BookmarkService,
-    private _noteService: NoteService,
-    private _globalConfigService: GlobalConfigService,
-    private _reminderService: ReminderService,
-    // private _workContextService: WorkContextService,
-    private _taskService: TaskService,
-    private _taskRepeatCfgService: TaskRepeatCfgService,
-    private _dateService: DateService,
-  ) {}
-
-  private async _removeAllNonArchiveTasksForProject(
-    projectIdToDelete: string,
-  ): Promise<any> {
-    const taskState: TaskState = await this._taskService.taskFeatureState$
-      .pipe(
-        filter((s) => s.isDataLoaded),
-        first(),
-      )
-      .toPromise();
-    const nonArchiveTaskIdsToDelete = taskState.ids.filter((id) => {
-      const t = taskState.entities[id] as Task;
-      if (!t) {
-        throw new Error('No task');
-      }
-      // NOTE sub tasks are accounted for in DeleteMainTasks action
-      return t.projectId === projectIdToDelete;
-    });
-
-    console.log(
-      'TaskIds to remove/unique',
-      nonArchiveTaskIdsToDelete,
-      unique(nonArchiveTaskIdsToDelete),
-    );
-    this._taskService.removeMultipleTasks(nonArchiveTaskIdsToDelete);
-  }
-
   private async _removeAllArchiveTasksForProject(
     projectIdToDelete: string,
   ): Promise<any> {
@@ -486,37 +381,14 @@ export class ProjectEffects {
     // remove archive
     await this._persistenceService.taskArchive.execAction(
       deleteTasks({ taskIds: archiveTaskIdsToDelete }),
+      true,
     );
-  }
-
-  private async _removeAllRepeatingTasksForProject(
-    projectIdToDelete: string,
-  ): Promise<any> {
-    const taskRepeatCfgs: TaskRepeatCfg[] =
-      await this._taskRepeatCfgService.taskRepeatCfgs$.pipe(first()).toPromise();
-    const allCfgIdsForProject = taskRepeatCfgs.filter(
-      (cfg) => cfg.projectId === projectIdToDelete,
-    );
-
-    const cfgsIdsToRemove: string[] = allCfgIdsForProject
-      .filter((cfg) => !cfg.tagIds || cfg.tagIds.length === 0)
-      .map((cfg) => cfg.id as string);
-    if (cfgsIdsToRemove.length > 0) {
-      this._taskRepeatCfgService.deleteTaskRepeatCfgsNoTaskCleanup(cfgsIdsToRemove);
-    }
-
-    const cfgsToUpdate: string[] = allCfgIdsForProject
-      .filter((cfg) => cfg.tagIds && cfg.tagIds.length > 0)
-      .map((taskRepeatCfg) => taskRepeatCfg.id as string);
-    if (cfgsToUpdate.length > 0) {
-      this._taskRepeatCfgService.updateTaskRepeatCfgs(cfgsToUpdate, { projectId: null });
-    }
   }
 
   private saveToLs$(isSyncModelChange: boolean): Observable<unknown> {
     return this._store$.pipe(
       // tap(() => console.log('SAVE')),
-      select(projectSelectors),
+      select(selectProjectFeatureState),
       take(1),
       switchMap((projectState) =>
         this._persistenceService.project.saveState(projectState, { isSyncModelChange }),

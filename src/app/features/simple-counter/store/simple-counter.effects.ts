@@ -1,6 +1,7 @@
-import { Injectable } from '@angular/core';
+import { inject, Injectable } from '@angular/core';
 import { Actions, createEffect, ofType } from '@ngrx/effects';
 import { select, Store } from '@ngrx/store';
+import confetti from 'canvas-confetti';
 import { PersistenceService } from '../../../core/persistence/persistence.service';
 import {
   addSimpleCounter,
@@ -14,32 +15,35 @@ import {
   updateSimpleCounter,
   upsertSimpleCounter,
 } from './simple-counter.actions';
+import { map, mergeMap, switchMap, tap, withLatestFrom } from 'rxjs/operators';
 import {
-  delay,
-  filter,
-  map,
-  mapTo,
-  mergeMap,
-  switchMap,
-  take,
-  tap,
-  withLatestFrom,
-} from 'rxjs/operators';
-import { selectSimpleCounterFeatureState } from './simple-counter.reducer';
+  selectSimpleCounterById,
+  selectSimpleCounterFeatureState,
+} from './simple-counter.reducer';
 import { SimpleCounterState, SimpleCounterType } from '../simple-counter.model';
 import { GlobalTrackingIntervalService } from '../../../core/global-tracking-interval/global-tracking-interval.service';
 import { SimpleCounterService } from '../simple-counter.service';
-import { EMPTY, Observable, of } from 'rxjs';
-import { SIMPLE_COUNTER_TRIGGER_ACTIONS } from '../simple-counter.const';
+import { EMPTY, Observable } from 'rxjs';
 import { T } from '../../../t.const';
 import { SnackService } from '../../../core/snack/snack.service';
-import { loadAllData } from '../../../root-store/meta/load-all-data.action';
-import { ImexMetaService } from '../../../imex/imex-meta/imex-meta.service';
-import { IdleService } from '../../idle/idle.service';
 import { DateService } from 'src/app/core/date/date.service';
+import { getWorklogStr } from '../../../util/get-work-log-str';
+import { getSimpleCounterStreakDuration } from '../get-simple-counter-streak-duration';
+import { TranslateService } from '@ngx-translate/core';
 
 @Injectable()
 export class SimpleCounterEffects {
+  private _actions$ = inject(Actions);
+  private _store$ = inject<Store<any>>(Store);
+  private _timeTrackingService = inject(GlobalTrackingIntervalService);
+  private _dateService = inject(DateService);
+  private _persistenceService = inject(PersistenceService);
+  private _simpleCounterService = inject(SimpleCounterService);
+  private _snackService = inject(SnackService);
+  private _translateService = inject(TranslateService);
+
+  successFullCountersMap: { [key: string]: boolean } = {};
+
   updateSimpleCountersStorage$: Observable<unknown> = createEffect(
     () =>
       this._actions$.pipe(
@@ -66,11 +70,12 @@ export class SimpleCounterEffects {
 
   checkTimedCounters$: Observable<unknown> = createEffect(() =>
     this._simpleCounterService.enabledAndToggledSimpleCounters$.pipe(
-      switchMap((items) =>
-        items && items.length
+      switchMap((itemsI) => {
+        const items = itemsI.filter((item) => item.type === SimpleCounterType.StopWatch);
+        return items && items.length
           ? this._timeTrackingService.tick$.pipe(map((tick) => ({ tick, items })))
-          : EMPTY,
-      ),
+          : EMPTY;
+      }),
       mergeMap(({ items, tick }) => {
         const today = this._dateService.todayStr();
         return items.map((item) =>
@@ -84,68 +89,7 @@ export class SimpleCounterEffects {
     ),
   );
 
-  actionListeners$: Observable<unknown> = createEffect(() =>
-    this._simpleCounterService.enabledSimpleCountersUpdatedOnCfgChange$.pipe(
-      map(
-        (items) =>
-          items &&
-          items.filter(
-            (item) =>
-              (item.triggerOnActions && item.triggerOnActions.length) ||
-              (item.triggerOffActions && item.triggerOffActions.length),
-          ),
-      ),
-      switchMap((items) =>
-        items && items.length
-          ? this._actions$.pipe(
-              ofType(...SIMPLE_COUNTER_TRIGGER_ACTIONS),
-              map((action) => ({ action, items })),
-            )
-          : EMPTY,
-      ),
-      switchMap(({ items, action }) =>
-        action.type === loadAllData.type
-          ? // NOTE: we delay because otherwise we might write into db while importing data
-            this._imexMetaService.isDataImportInProgress$.pipe(
-              filter((isInProgress) => !isInProgress),
-              take(1),
-              delay(3000),
-              mapTo({ items, action }),
-            )
-          : of({ items, action }),
-      ),
-      mergeMap(({ items, action }) => {
-        const clickCounter = items.filter(
-          (item) => item.type === SimpleCounterType.ClickCounter,
-        );
-        const stopWatch = items.filter(
-          (item) => item.type === SimpleCounterType.StopWatch,
-        );
-
-        const startItems = stopWatch.filter(
-          (item) => item.triggerOnActions && item.triggerOnActions.includes(action.type),
-        );
-        const counterUpItems = clickCounter.filter(
-          (item) => item.triggerOnActions && item.triggerOnActions.includes(action.type),
-        );
-        const stopItems = stopWatch.filter(
-          (item) =>
-            item.triggerOffActions && item.triggerOffActions.includes(action.type),
-        );
-        const today = this._dateService.todayStr();
-
-        return [
-          ...startItems.map((item) => setSimpleCounterCounterOn({ id: item.id })),
-          ...stopItems.map((item) => setSimpleCounterCounterOff({ id: item.id })),
-          ...counterUpItems.map((item) =>
-            increaseSimpleCounterCounterToday({ id: item.id, increaseBy: 1, today }),
-          ),
-        ];
-      }),
-    ),
-  );
-
-  successSnack$: Observable<unknown> = createEffect(
+  updateCfgSuccessSnack$: Observable<unknown> = createEffect(
     () =>
       this._actions$.pipe(
         ofType(updateAllSimpleCounters),
@@ -160,29 +104,67 @@ export class SimpleCounterEffects {
     { dispatch: false },
   );
 
-  // NOTE: makes more sense to do this inside the idle dialog itself
-  // disableOnIdle$: Observable<unknown> = createEffect(() =>
-  //   this._idleService.isIdle$.pipe(
-  //     filter((isIdle) => isIdle),
-  //     map(() => turnOffAllSimpleCounterCounters()),
-  //   ),
-  // );
+  streakSuccessSnack$: Observable<unknown> = createEffect(
+    () =>
+      this._actions$.pipe(
+        ofType(increaseSimpleCounterCounterToday),
+        switchMap((a) =>
+          this._store$.pipe(select(selectSimpleCounterById, { id: a.id })),
+        ),
+        tap((sc) => {
+          if (sc && !this.successFullCountersMap[sc.id] && sc.isTrackStreaks) {
+            if (sc.countOnDay[getWorklogStr()] >= sc.streakMinValue) {
+              const streakDuration = getSimpleCounterStreakDuration(sc);
+              // eslint-disable-next-line max-len
+              const msg = `<strong>${sc.title}</strong> <br />${this._translateService.instant(T.F.SIMPLE_COUNTER.S.GOAL_REACHED_1)}<br /> ${this._translateService.instant(T.F.SIMPLE_COUNTER.S.GOAL_REACHED_2)} <strong>${streakDuration}🔥</strong>`;
 
-  constructor(
-    private _actions$: Actions,
-    private _store$: Store<any>,
-    private _timeTrackingService: GlobalTrackingIntervalService,
-    private _dateService: DateService,
-    private _persistenceService: PersistenceService,
-    private _simpleCounterService: SimpleCounterService,
-    private _imexMetaService: ImexMetaService,
-    private _snackService: SnackService,
-    private _idleService: IdleService,
-  ) {}
+              const DURATION = 4000;
+              this._snackService.open({
+                type: 'SUCCESS',
+                ico: sc.icon || undefined,
+                // ico: 'celebration',
+                // ico: '🎉',
+                config: {
+                  duration: DURATION,
+                  horizontalPosition: 'center',
+                  verticalPosition: 'top',
+                },
+                msg,
+              });
+              this.successFullCountersMap[sc.id] = true;
+              this._celebrate();
+            }
+            // else if (
+            //   sc.type !== SimpleCounterType.StopWatch &&
+            //   sc.countOnDay[getWorklogStr()] > 0
+            // ) {
+            //   confetti({
+            //     particleCount: 40,
+            //     startVelocity: 10,
+            //     spread: 200,
+            //     angle: -180,
+            //     ticks: 50,
+            //     decay: 0.99,
+            //     origin: { y: 0, x: 0.9 },
+            //   });
+            // }
+          }
+        }),
+      ),
+    { dispatch: false },
+  );
 
   private _saveToLs(simpleCounterState: SimpleCounterState): void {
     this._persistenceService.simpleCounter.saveState(simpleCounterState, {
       isSyncModelChange: true,
+    });
+  }
+
+  private _celebrate(): void {
+    confetti({
+      particleCount: 100,
+      spread: 70,
+      origin: { y: 0.6 },
     });
   }
 }

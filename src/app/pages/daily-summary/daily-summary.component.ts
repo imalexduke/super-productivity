@@ -1,21 +1,26 @@
+import confetti from 'canvas-confetti';
+
 import {
   ChangeDetectionStrategy,
   ChangeDetectorRef,
   Component,
+  computed,
+  inject,
   OnDestroy,
   OnInit,
+  Signal,
 } from '@angular/core';
 import { TaskService } from '../../features/tasks/task.service';
-import { ActivatedRoute, Router } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { IS_ELECTRON } from '../../app.constants';
 import { MatDialog } from '@angular/material/dialog';
 import { combineLatest, from, merge, Observable, Subject } from 'rxjs';
-import { IPC } from '../../../../electron/shared-with-frontend/ipc-events.const';
 import { DialogConfirmComponent } from '../../ui/dialog-confirm/dialog-confirm.component';
 import { GlobalConfigService } from '../../features/config/global-config.service';
 import {
   delay,
   filter,
+  first,
   map,
   shareReplay,
   startWith,
@@ -24,12 +29,10 @@ import {
   takeUntil,
   withLatestFrom,
 } from 'rxjs/operators';
-import * as moment from 'moment';
+import moment from 'moment';
 import { T } from '../../t.const';
-import { ElectronService } from '../../core/electron/electron.service';
 import { WorkContextService } from '../../features/work-context/work-context.service';
 import { Task, TaskWithSubTasks } from '../../features/tasks/task.model';
-import { ipcRenderer } from 'electron';
 import { SyncProviderService } from '../../imex/sync/sync-provider.service';
 import { isToday, isYesterday } from '../../util/is-today.util';
 import { WorklogService } from '../../features/worklog/worklog.service';
@@ -41,6 +44,32 @@ import { shareReplayUntil } from '../../util/share-replay-until';
 import { DateService } from 'src/app/core/date/date.service';
 import { Action } from '@ngrx/store';
 import { BeforeFinishDayService } from '../../features/before-finish-day/before-finish-day.service';
+import { MatAnchor, MatButton, MatIconButton } from '@angular/material/button';
+import { MatIcon } from '@angular/material/icon';
+import { InlineInputComponent } from '../../ui/inline-input/inline-input.component';
+import { MatTab, MatTabGroup } from '@angular/material/tabs';
+import { MatProgressSpinner } from '@angular/material/progress-spinner';
+import { PlanTasksTomorrowComponent } from './plan-tasks-tomorrow/plan-tasks-tomorrow.component';
+import { MatTooltip } from '@angular/material/tooltip';
+import { AsyncPipe } from '@angular/common';
+import { MomentFormatPipe } from '../../ui/pipes/moment-format.pipe';
+import { MsToClockStringPipe } from '../../ui/duration/ms-to-clock-string.pipe';
+import { TranslatePipe } from '@ngx-translate/core';
+import { TaskSummaryTablesComponent } from '../../features/tasks/task-summary-tables/task-summary-tables.component';
+import { TasksByTagComponent } from '../../features/tasks/tasks-by-tag/tasks-by-tag.component';
+import { RightPanelComponent } from '../../features/right-panel/right-panel.component';
+import { EvaluationSheetComponent } from '../../features/metric/evaluation-sheet/evaluation-sheet.component';
+import { WorklogWeekComponent } from '../../features/worklog/worklog-week/worklog-week.component';
+import { InlineMarkdownComponent } from '../../ui/inline-markdown/inline-markdown.component';
+import { unToggleCheckboxesInMarkdownTxt } from '../../util/untoggle-checkboxes-in-markdown-txt';
+import { expandAnimation } from '../../ui/animations/expand.ani';
+import { SimpleCounterService } from '../../features/simple-counter/simple-counter.service';
+import { toSignal } from '@angular/core/rxjs-interop';
+import { getSimpleCounterStreakDuration } from '../../features/simple-counter/get-simple-counter-streak-duration';
+import {
+  SimpleCounterSummaryItem,
+  SimpleCounterSummaryItemComponent,
+} from './simple-counter-summary-item/simple-counter-summary-item.component';
 
 const SUCCESS_ANIMATION_DURATION = 500;
 const MAGIC_YESTERDAY_MARGIN = 4 * 60 * 60 * 1000;
@@ -50,12 +79,49 @@ const MAGIC_YESTERDAY_MARGIN = 4 * 60 * 60 * 1000;
   templateUrl: './daily-summary.component.html',
   styleUrls: ['./daily-summary.component.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush,
+  imports: [
+    MatAnchor,
+    RouterLink,
+    MatIcon,
+    InlineInputComponent,
+    MatTabGroup,
+    MatTab,
+    MatProgressSpinner,
+    PlanTasksTomorrowComponent,
+    MatButton,
+    MatTooltip,
+    AsyncPipe,
+    MomentFormatPipe,
+    MsToClockStringPipe,
+    TranslatePipe,
+    TaskSummaryTablesComponent,
+    TasksByTagComponent,
+    RightPanelComponent,
+    EvaluationSheetComponent,
+    WorklogWeekComponent,
+    InlineMarkdownComponent,
+    MatIconButton,
+    SimpleCounterSummaryItemComponent,
+  ],
+  animations: [expandAnimation],
 })
 export class DailySummaryComponent implements OnInit, OnDestroy {
+  readonly configService = inject(GlobalConfigService);
+  readonly workContextService = inject(WorkContextService);
+  private readonly _taskService = inject(TaskService);
+  private readonly _router = inject(Router);
+  private readonly _matDialog = inject(MatDialog);
+  private readonly _persistenceService = inject(PersistenceService);
+  private readonly _worklogService = inject(WorklogService);
+  private readonly _cd = inject(ChangeDetectorRef);
+  private readonly _activatedRoute = inject(ActivatedRoute);
+  private readonly _syncProviderService = inject(SyncProviderService);
+  private readonly _beforeFinishDayService = inject(BeforeFinishDayService);
+  private readonly _simpleCounterService = inject(SimpleCounterService);
+  private readonly _dateService = inject(DateService);
+
   T: typeof T = T;
   _onDestroy$ = new Subject<void>();
-
-  cfg: any = {};
 
   readonly isIncludeYesterday: boolean;
   isTimeSheetExported: boolean = true;
@@ -79,6 +145,20 @@ export class DailySummaryComponent implements OnInit, OnDestroy {
     }),
     shareReplayUntil(this._onDestroy$, 1),
   );
+
+  cfg$ = this.configService.cfg$;
+
+  private _enabledSimpleCounters = toSignal(
+    this._simpleCounterService.enabledSimpleCounters$,
+    { initialValue: [] },
+  );
+
+  simpleCounterSummaryItems: Signal<SimpleCounterSummaryItem[]> = computed(() => {
+    return this._enabledSimpleCounters().map((sc) => ({
+      ...sc,
+      streakDuration: getSimpleCounterStreakDuration(sc),
+    }));
+  });
 
   tasksWorkedOnOrDoneOrRepeatableFlat$: Observable<Task[]> = this.dayStr$.pipe(
     switchMap((dayStr) => this._getDailySummaryTasksFlat$(dayStr)),
@@ -157,26 +237,24 @@ export class DailySummaryComponent implements OnInit, OnDestroy {
   actionsToExecuteBeforeFinishDay: Action[] = [{ type: 'FINISH_DAY' }];
 
   private _successAnimationTimeout?: number;
+  private _startCelebrationTimeout?: number;
+  private _celebrationIntervalId?: number;
 
-  constructor(
-    public readonly configService: GlobalConfigService,
-    public readonly workContextService: WorkContextService,
-    private readonly _taskService: TaskService,
-    private readonly _router: Router,
-    private readonly _matDialog: MatDialog,
-    private readonly _persistenceService: PersistenceService,
-    private readonly _worklogService: WorklogService,
-    private readonly _electronService: ElectronService,
-    private readonly _cd: ChangeDetectorRef,
-    private readonly _activatedRoute: ActivatedRoute,
-    private readonly _syncProviderService: SyncProviderService,
-    private readonly _beforeFinishDayService: BeforeFinishDayService,
-    private readonly _dateService: DateService,
-  ) {
+  constructor() {
     this._taskService.setSelectedId(null);
     const todayStart = new Date();
     todayStart.setHours(0, 0, 0, 0);
     this.isIncludeYesterday = Date.now() - todayStart.getTime() <= MAGIC_YESTERDAY_MARGIN;
+
+    if (
+      this.configService.cfg?.dailySummaryNote?.txt &&
+      this.configService.cfg?.dailySummaryNote?.lastUpdateDayStr !==
+        this._dateService.todayStr()
+    ) {
+      this.configService.updateSection('dailySummaryNote', {
+        txt: unToggleCheckboxesInMarkdownTxt(this.configService.cfg.dailySummaryNote.txt),
+      });
+    }
   }
 
   ngOnInit(): void {
@@ -199,15 +277,19 @@ export class DailySummaryComponent implements OnInit, OnDestroy {
           this.dayStr = s.params.dayStr;
         }
       });
+
+    this._startCelebrationTimeout = window.setTimeout(() => {
+      this._celebrate();
+    }, 750);
   }
 
   ngOnDestroy(): void {
     this._onDestroy$.next();
     this._onDestroy$.complete();
     // should not happen, but just in case
-    if (this._successAnimationTimeout) {
-      window.clearTimeout(this._successAnimationTimeout);
-    }
+    window.clearTimeout(this._successAnimationTimeout);
+    window.clearTimeout(this._startCelebrationTimeout);
+    window.clearInterval(this._celebrationIntervalId);
   }
 
   onEvaluationSave(): void {
@@ -216,13 +298,8 @@ export class DailySummaryComponent implements OnInit, OnDestroy {
 
   async finishDay(): Promise<void> {
     await this._beforeFinishDayService.executeActions();
-
-    const doneTasks = await this.workContextService.doneTasks$.pipe(take(1)).toPromise();
-
-    this._taskService.moveToArchive(doneTasks);
-
     if (IS_ELECTRON && this.isForToday) {
-      this._matDialog
+      const isConfirm = await this._matDialog
         .open(DialogConfirmComponent, {
           restoreFocus: true,
           data: {
@@ -232,20 +309,25 @@ export class DailySummaryComponent implements OnInit, OnDestroy {
           },
         })
         .afterClosed()
-        .subscribe((isConfirm: boolean) => {
-          if (isConfirm) {
-            this._finishDayForGood(() => {
-              (this._electronService.ipcRenderer as typeof ipcRenderer).send(
-                IPC.SHUTDOWN_NOW,
-              );
-            });
-          } else if (isConfirm === false) {
-            this._finishDayForGood(() => {
-              this._router.navigate(['/active/tasks']);
-            });
-          }
+        .pipe(first())
+        .toPromise();
+
+      // dialog was just clicked away
+      if (isConfirm === undefined) {
+        return;
+      } else if (isConfirm === true) {
+        await this._moveDoneToArchive();
+        this._finishDayForGood(() => {
+          window.ea.shutdownNow();
         });
+      } else if (isConfirm === false) {
+        await this._moveDoneToArchive();
+        this._finishDayForGood(() => {
+          this._router.navigate(['/active/tasks']);
+        });
+      }
     } else {
+      await this._moveDoneToArchive();
       this._finishDayForGood(() => {
         this._router.navigate(['/active/tasks']);
       });
@@ -268,6 +350,22 @@ export class DailySummaryComponent implements OnInit, OnDestroy {
 
   onTabIndexChange(i: number): void {
     this.selectedTabIndex = i;
+  }
+
+  updateDailySummaryTxt(txt?: string, isForceShow = false): void {
+    this.configService.updateSection(
+      'dailySummaryNote',
+      {
+        txt: (!txt || txt.length === 0) && !isForceShow ? undefined : txt,
+        lastUpdateDayStr: this._dateService.todayStr(),
+      },
+      true,
+    );
+  }
+
+  private async _moveDoneToArchive(): Promise<void> {
+    const doneTasks = await this.workContextService.doneTasks$.pipe(take(1)).toPromise();
+    this._taskService.moveToArchive(doneTasks);
   }
 
   private async _finishDayForGood(cb?: any): Promise<void> {
@@ -415,5 +513,36 @@ export class DailySummaryComponent implements OnInit, OnDestroy {
     return combineLatest([todayTasks, archiveTasks]).pipe(
       map(([t1, t2]) => t1.concat(t2)),
     );
+  }
+
+  private _celebrate(): void {
+    const duration = 4 * 1000;
+    const animationEnd = Date.now() + duration;
+    const defaults = { startVelocity: 20, spread: 720, ticks: 600, zIndex: 0 };
+
+    const randomInRange = (min: number, max: number): number =>
+      // eslint-disable-next-line no-mixed-operators
+      Math.random() * (max - min) + min;
+
+    this._celebrationIntervalId = window.setInterval(() => {
+      const timeLeft = animationEnd - Date.now();
+
+      if (timeLeft <= 0) {
+        return window.clearInterval(this._celebrationIntervalId);
+      }
+
+      const particleCount = 50 * (timeLeft / duration);
+      // since particles fall down, start a bit higher than random
+      confetti({
+        ...defaults,
+        particleCount,
+        origin: { x: randomInRange(0.1, 0.3), y: Math.random() - 0.2 },
+      });
+      confetti({
+        ...defaults,
+        particleCount,
+        origin: { x: randomInRange(0.7, 0.9), y: Math.random() - 0.2 },
+      });
+    }, 250);
   }
 }

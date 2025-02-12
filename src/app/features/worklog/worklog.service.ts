@@ -1,4 +1,4 @@
-import { Injectable } from '@angular/core';
+import { Injectable, inject } from '@angular/core';
 import {
   Worklog,
   WorklogDay,
@@ -30,11 +30,18 @@ import { NavigationEnd, Router } from '@angular/router';
 import { DataInitService } from '../../core/data-init/data-init.service';
 import { WorklogTask } from '../tasks/task.model';
 import { mapArchiveToWorklogWeeks } from './util/map-archive-to-worklog-weeks';
-import * as moment from 'moment';
+import moment from 'moment';
 import { DateAdapter } from '@angular/material/core';
 
 @Injectable({ providedIn: 'root' })
 export class WorklogService {
+  private readonly _persistenceService = inject(PersistenceService);
+  private readonly _workContextService = inject(WorkContextService);
+  private readonly _dataInitService = inject(DataInitService);
+  private readonly _taskService = inject(TaskService);
+  private readonly _router = inject(Router);
+  private _dateAdapter = inject<DateAdapter<unknown>>(DateAdapter);
+
   // treated as private but needs to be assigned first
   archiveUpdateManualTrigger$: BehaviorSubject<boolean> = new BehaviorSubject<boolean>(
     true,
@@ -150,15 +157,6 @@ export class WorklogService {
       return tasks;
     }),
   );
-
-  constructor(
-    private readonly _persistenceService: PersistenceService,
-    private readonly _workContextService: WorkContextService,
-    private readonly _dataInitService: DataInitService,
-    private readonly _taskService: TaskService,
-    private readonly _router: Router,
-    private _dateAdapter: DateAdapter<unknown>,
-  ) {}
 
   refreshWorklog(): void {
     this.archiveUpdateManualTrigger$.next(true);

@@ -103,11 +103,7 @@ h2 {
     margin-right: $s;
   }
 
-  .time-val {
-  }
-
   .no-wrap {
-    display: inline-block;
     white-space: nowrap;
     display: inline-flex;
     align-items: center;
@@ -176,6 +172,8 @@ h2 {
   @include scrollYImportant();
   top: 0;
   bottom: 0;
+  // make space for add task bar button not overlapping 'finish day' button
+  padding-bottom: 64px;
 }
 
 .backlog {

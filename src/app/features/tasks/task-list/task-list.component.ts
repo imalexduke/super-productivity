@@ -1,28 +1,50 @@
 import {
+  AfterViewInit,
   ChangeDetectionStrategy,
-  ChangeDetectorRef,
   Component,
-  ElementRef,
-  Input,
+  computed,
+  forwardRef,
+  inject,
+  input,
   OnDestroy,
-  OnInit,
-  ViewChild,
+  viewChild,
 } from '@angular/core';
-import { Task, TaskWithSubTasks } from '../task.model';
+import { DropListModelSource, Task, TaskCopy, TaskWithSubTasks } from '../task.model';
 import { TaskService } from '../task.service';
-import { DragulaService } from 'ng2-dragula';
-import {
-  BehaviorSubject,
-  combineLatest,
-  Observable,
-  ReplaySubject,
-  Subscription,
-} from 'rxjs';
 import { expandFadeFastAnimation } from '../../../ui/animations/expand.ani';
-import { map } from 'rxjs/operators';
 import { filterDoneTasks } from '../filter-done-tasks.pipe';
 import { T } from '../../../t.const';
 import { taskListAnimation } from './task-list-ani';
+import { toSignal } from '@angular/core/rxjs-interop';
+import { CdkDrag, CdkDragDrop, CdkDropList } from '@angular/cdk/drag-drop';
+import { WorkContextType } from '../../work-context/work-context.model';
+import { moveTaskInTodayList } from '../../work-context/store/work-context-meta.actions';
+import {
+  moveProjectTaskInBacklogList,
+  moveProjectTaskToBacklogList,
+  moveProjectTaskToRegularList,
+} from '../../project/store/project.actions';
+import { moveSubTask } from '../store/task.actions';
+import { WorkContextService } from '../../work-context/work-context.service';
+import { Store } from '@ngrx/store';
+import { moveItemBeforeItem } from '../../../util/move-item-before-item';
+import { DropListService } from '../../../core-ui/drop-list/drop-list.service';
+import { IssueService } from '../../issue/issue.service';
+import { SearchResultItem } from '../../issue/issue.model';
+import { MatButton } from '@angular/material/button';
+import { MatIcon } from '@angular/material/icon';
+import { TaskComponent } from '../task/task.component';
+import { AsyncPipe } from '@angular/common';
+
+export type TaskListId = 'PARENT' | 'SUB';
+export type ListModelId = DropListModelSource | string;
+const PARENT_ALLOWED_LISTS = ['DONE', 'UNDONE', 'BACKLOG', 'ADD_TASK_PANEL'];
+
+export interface DropModelDataForList {
+  listModelId: ListModelId;
+  allTasks: TaskWithSubTasks[];
+  filteredTasks: TaskWithSubTasks[];
+}
 
 @Component({
   selector: 'task-list',
@@ -30,131 +52,231 @@ import { taskListAnimation } from './task-list-ani';
   styleUrls: ['./task-list.component.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush,
   animations: [taskListAnimation, expandFadeFastAnimation],
+  imports: [
+    MatButton,
+    MatIcon,
+    CdkDropList,
+    CdkDrag,
+    AsyncPipe,
+    forwardRef(() => TaskComponent),
+  ],
 })
-export class TaskListComponent implements OnDestroy, OnInit {
+export class TaskListComponent implements OnDestroy, AfterViewInit {
+  private _taskService = inject(TaskService);
+  private _workContextService = inject(WorkContextService);
+  private _store = inject(Store);
+  private _issueService = inject(IssueService);
+  dropListService = inject(DropListService);
+
+  tasks = input<TaskWithSubTasks[]>([]);
+  isHideDone = input(false);
+  isHideAll = input(false);
+
+  listId = input.required<TaskListId>();
+  listModelId = input.required<ListModelId>();
+  parentId = input<string | undefined>(undefined);
+
+  noTasksMsg = input<string | undefined>(undefined);
+  isBacklog = input(false);
+  isSubTaskList = input(false);
+
+  currentTaskId = toSignal(this._taskService.currentTaskId$);
+  dropModelDataForList = computed<DropModelDataForList>(() => {
+    return {
+      listModelId: this.listModelId(),
+      allTasks: this.tasks(),
+      filteredTasks: this.filteredTasks(),
+    };
+  });
+
+  filteredTasks = computed<TaskWithSubTasks[]>(() => {
+    const tasks = this.tasks();
+    if (this.listId() === 'PARENT') {
+      return tasks;
+    }
+    const isHideDone = this.isHideDone();
+    const isHideAll = this.isHideAll();
+    const currentId = this.currentTaskId() || null;
+    return filterDoneTasks(tasks, currentId, isHideDone, isHideAll);
+  });
+
+  doneTasksLength = computed(() => {
+    return this.tasks()?.filter((task) => task.isDone).length ?? 0;
+  });
+  allTasksLength = computed(() => this.tasks()?.length ?? 0);
+
+  readonly dropList = viewChild(CdkDropList);
+
   T: typeof T = T;
-  tasksIN: TaskWithSubTasks[] = [];
-  tasks$: ReplaySubject<TaskWithSubTasks[]> = new ReplaySubject(1);
-  isHideDoneIN: boolean = false;
-  isHideDone$: BehaviorSubject<boolean> = new BehaviorSubject<boolean>(false);
-  isHideAllIN: boolean = false;
-  isHideAll$: BehaviorSubject<boolean> = new BehaviorSubject<boolean>(false);
-  filteredTasks: TaskWithSubTasks[] = [];
 
-  @Input() parentId?: string;
-  @Input() listModelId?: string;
-  @Input() noTasksMsg?: string;
-  @Input() isBacklog: boolean = false;
-  listId?: string;
-  @ViewChild('listEl', { static: true }) listEl?: ElementRef;
-  isBlockAni: boolean = false;
-  doneTasksLength: number = 0;
-  undoneTasksLength: number = 0;
-  allTasksLength: number = 0;
-  currentTaskId: string | null = null;
-  private _subs: Subscription = new Subscription();
-  private _blockAnimationTimeout?: number;
-  private _filteredTasks$: Observable<TaskWithSubTasks[]> = combineLatest([
-    this.tasks$,
-    this.isHideDone$,
-    this.isHideAll$,
-    this._taskService.currentTaskId$,
-  ]).pipe(
-    map(([tasks, isHideDone, isHideAll, currentId]) =>
-      filterDoneTasks(tasks, currentId, isHideDone, isHideAll),
-    ),
-  );
-
-  constructor(
-    private _taskService: TaskService,
-    private _dragulaService: DragulaService,
-    private _cd: ChangeDetectorRef,
-  ) {}
-
-  @Input('listId') set listIdIn(v: string) {
-    this.listId = v;
-
-    // Disable filtering for non sub task tasks
-    if (v !== 'SUB') {
-      this._filteredTasks$ = this.tasks$;
-    }
-  }
-
-  @Input() set tasks(tasks: TaskWithSubTasks[]) {
-    this.tasksIN = tasks;
-    this.tasks$.next(tasks);
-
-    if (!tasks) {
-      return;
-    }
-    this.doneTasksLength = this.tasksIN.filter((task) => task.isDone).length;
-    this.allTasksLength = this.tasksIN.length;
-    this.undoneTasksLength = this.tasksIN.length - this.doneTasksLength;
-  }
-
-  @Input() set isHideDone(val: boolean) {
-    this.isHideDoneIN = val;
-    this.isHideDone$.next(val);
-  }
-
-  @Input() set isHideAll(val: boolean) {
-    this.isHideAllIN = val;
-    this.isHideAll$.next(val);
-  }
-
-  ngOnInit(): void {
-    this._subs.add(
-      this._filteredTasks$.subscribe((tasks) => {
-        this.filteredTasks = tasks;
-      }),
-    );
-
-    this._subs.add(
-      this._dragulaService.dropModel(this.listId).subscribe((params: any) => {
-        const { target, source, targetModel, item } = params;
-        if (this.listEl && this.listEl.nativeElement === target) {
-          this._blockAnimation();
-
-          const sourceModelId = source.dataset.id;
-          const targetModelId = target.dataset.id;
-          const targetNewIds = targetModel.map((task: Task) => task.id);
-          const movedTaskId = item.id;
-          this._taskService.move(movedTaskId, sourceModelId, targetModelId, targetNewIds);
-        }
-      }),
-    );
-
-    this._subs.add(
-      this._taskService.currentTaskId$.subscribe((val) => (this.currentTaskId = val)),
-    );
+  ngAfterViewInit(): void {
+    this.dropListService.registerDropList(this.dropList()!, this.listId() === 'SUB');
   }
 
   ngOnDestroy(): void {
-    this._subs.unsubscribe();
-    if (this._blockAnimationTimeout) {
-      clearTimeout(this._blockAnimationTimeout);
-    }
+    this.dropListService.unregisterDropList(this.dropList()!);
   }
 
   trackByFn(i: number, task: Task): string {
     return task.id;
   }
 
-  expandDoneTasks(): void {
-    if (!this.parentId) {
-      throw new Error();
+  enterPredicate(drag: CdkDrag, drop: CdkDropList): boolean {
+    // TODO this gets called very often for nested lists. Maybe there are possibilities to optimize
+    const task = drag.data;
+    // const targetModelId = drag.dropContainer.data.listModelId;
+    const targetModelId = drop.data.listModelId;
+    const isSubtask = !!task.parentId;
+    // console.log(drag.data.id, { isSubtask, targetModelId, drag, drop });
+    // return true;
+    if (isSubtask) {
+      if (!PARENT_ALLOWED_LISTS.includes(targetModelId)) {
+        return true;
+      }
+    } else {
+      if (PARENT_ALLOWED_LISTS.includes(targetModelId)) {
+        return true;
+      }
     }
-
-    this._taskService.showSubTasks(this.parentId);
-    this._taskService.focusTask(this.parentId);
+    return false;
   }
 
-  private _blockAnimation(): void {
-    this.isBlockAni = true;
-    this._cd.detectChanges();
-    this._blockAnimationTimeout = window.setTimeout(() => {
-      this.isBlockAni = false;
-      this._cd.detectChanges();
+  async drop(
+    srcFilteredTasks: TaskWithSubTasks[],
+    ev: CdkDragDrop<
+      DropModelDataForList,
+      DropModelDataForList | string,
+      TaskWithSubTasks | SearchResultItem
+    >,
+  ): Promise<void> {
+    const srcListData = ev.previousContainer.data;
+    const targetListData = ev.container.data;
+    const draggedTask = ev.item.data;
+    console.log({
+      ev,
+      srcListData,
+      targetListData,
+      draggedTask,
+      listId: this.listId(),
+      listModelId: this.listModelId(),
+      filteredTasks: this.filteredTasks(),
     });
+
+    const targetTask = targetListData.filteredTasks[ev.currentIndex] as TaskCopy;
+
+    if ('issueData' in draggedTask) {
+      return this._addFromIssuePanel(draggedTask, srcListData as string);
+    } else if (typeof srcListData === 'string') {
+      throw new Error('Should not happen 2');
+    }
+
+    if (targetTask && targetTask.id === draggedTask.id) {
+      return;
+    }
+
+    const newIds =
+      targetTask && targetTask.id !== draggedTask.id
+        ? [
+            ...moveItemBeforeItem(
+              targetListData.filteredTasks,
+              draggedTask,
+              targetTask as TaskWithSubTasks,
+            ),
+          ]
+        : [
+            ...targetListData.filteredTasks.filter((t) => t.id !== draggedTask.id),
+            draggedTask,
+          ];
+    console.log(srcListData.listModelId, '=>', targetListData.listModelId, {
+      targetTask,
+      draggedTask,
+      newIds,
+    });
+
+    this.dropListService.blockAniTrigger$.next();
+    this._move(
+      draggedTask.id,
+      srcListData.listModelId,
+      targetListData.listModelId,
+      newIds.map((p) => p.id),
+    );
+  }
+
+  async _addFromIssuePanel(
+    item: SearchResultItem,
+    issueProviderId: string,
+  ): Promise<void> {
+    if (!item.issueType || !item.issueData || !issueProviderId) {
+      throw new Error('No issueData');
+    }
+
+    await this._issueService.addTaskFromIssue({
+      issueDataReduced: item.issueData,
+      issueProviderId: issueProviderId,
+      issueProviderKey: item.issueType,
+    });
+  }
+
+  private _move(
+    taskId: string,
+    src: DropListModelSource | string,
+    target: DropListModelSource | string,
+    newOrderedIds: string[],
+  ): void {
+    const isSrcRegularList = src === 'DONE' || src === 'UNDONE';
+    const isTargetRegularList = target === 'DONE' || target === 'UNDONE';
+    const workContextId = this._workContextService.activeWorkContextId as string;
+
+    if (isSrcRegularList && isTargetRegularList) {
+      // move inside today
+      const workContextType = this._workContextService
+        .activeWorkContextType as WorkContextType;
+      this._store.dispatch(
+        moveTaskInTodayList({
+          taskId,
+          newOrderedIds,
+          src,
+          target,
+          workContextId,
+          workContextType,
+        }),
+      );
+    } else if (src === 'BACKLOG' && target === 'BACKLOG') {
+      // move inside backlog
+      this._store.dispatch(
+        moveProjectTaskInBacklogList({ taskId, newOrderedIds, workContextId }),
+      );
+    } else if (src === 'BACKLOG' && isTargetRegularList) {
+      // move from backlog to today
+      this._store.dispatch(
+        moveProjectTaskToRegularList({
+          taskId,
+          newOrderedIds,
+          src,
+          target,
+          workContextId,
+        }),
+      );
+    } else if (isSrcRegularList && target === 'BACKLOG') {
+      // move from today to backlog
+      this._store.dispatch(
+        moveProjectTaskToBacklogList({ taskId, newOrderedIds, workContextId }),
+      );
+    } else {
+      // move sub task
+      this._store.dispatch(
+        moveSubTask({ taskId, srcTaskId: src, targetTaskId: target, newOrderedIds }),
+      );
+    }
+  }
+
+  expandDoneTasks(): void {
+    const pid = this.parentId();
+    if (!pid) {
+      throw new Error('Parent ID is undefined');
+    }
+
+    this._taskService.showSubTasks(pid);
+    this._taskService.focusTask(pid);
   }
 }

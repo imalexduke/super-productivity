@@ -5,7 +5,7 @@
 }
 
 h3 {
-  margin-top: $s*3;
+  margin-top: $s * 3;
 }
 
 .basic-stats {
@@ -27,9 +27,6 @@ table {
   }
 }
 
-.chart-wrapper {
-}
-
 .pie-charts {
   @include mq(sm) {
     display: flex;
@@ -41,9 +38,9 @@ table {
 }
 
 section {
-  margin-bottom: 2*$s;
+  margin-bottom: 2 * $s;
 }
 
 .metric-metrics {
-  margin-top: $s*6;
+  margin-top: $s * 6;
 }

@@ -7,6 +7,7 @@ import { unique } from '../../util/unique';
 import { TODAY_TAG } from '../../features/tag/tag.const';
 import { TaskRepeatCfgCopy } from '../../features/task-repeat-cfg/task-repeat-cfg.model';
 import { ALL_ENTITY_MODEL_KEYS } from '../persistence/persistence.const';
+import { IssueProvider } from '../../features/issue/issue.model';
 
 const ENTITY_STATE_KEYS: (keyof AppDataComplete)[] = ALL_ENTITY_MODEL_KEYS;
 
@@ -16,10 +17,12 @@ export const dataRepair = (data: AppDataComplete): AppDataComplete => {
   }
 
   // console.time('dataRepair');
-  let dataOut: AppDataComplete = data;
+  // NOTE copy is important to prevent readonly errors
+  let dataOut: AppDataComplete = { ...data };
   // let dataOut: AppDataComplete = dirtyDeepCopy(data);
   dataOut = _fixEntityStates(dataOut);
   dataOut = _removeMissingTasksFromListsOrRestoreFromArchive(dataOut);
+  dataOut = _removeNonExistentProjectIdsFromIssueProviders(dataOut);
   dataOut = _removeNonExistentProjectIdsFromTasks(dataOut);
   dataOut = _removeNonExistentProjectIdsFromTaskRepeatCfg(dataOut);
   dataOut = _addOrphanedTasksToProjectLists(dataOut);
@@ -226,7 +229,10 @@ const _resetEntityIdsFromObjects = (
 ): AppBaseDataEntityLikeStates => {
   return {
     ...data,
-    ids: Object.keys(data.entities).filter((id) => !!data.entities[id]),
+    entities: (data.entities as any) || {},
+    ids: data.entities
+      ? Object.keys(data.entities).filter((id) => !!data.entities[id])
+      : [],
   };
 };
 
@@ -286,6 +292,23 @@ const _removeNonExistentProjectIdsFromTasks = (
     if (t.projectId && !projectIds.includes(t.projectId)) {
       console.log('Delete missing project id from archive task ' + t.projectId);
       t.projectId = null;
+    }
+  });
+
+  return data;
+};
+
+const _removeNonExistentProjectIdsFromIssueProviders = (
+  data: AppDataComplete,
+): AppDataComplete => {
+  const { issueProvider, project } = data;
+  const projectIds: string[] = project.ids as string[];
+  const issueProviderIds: string[] = issueProvider.ids;
+  issueProviderIds.forEach((id) => {
+    const t = issueProvider.entities[id] as IssueProvider;
+    if (t.defaultProjectId && !projectIds.includes(t.defaultProjectId)) {
+      console.log('Delete missing project id from issueProvider ' + t.defaultProjectId);
+      t.defaultProjectId = null;
     }
   });
 

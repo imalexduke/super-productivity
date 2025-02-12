@@ -27,6 +27,30 @@
   }
 }
 
+.hide-xxs {
+  @include mq(xxs, max) {
+    display: none !important;
+  }
+}
+
+.hide-xxxs {
+  @include mq(xxxs, max) {
+    display: none !important;
+  }
+}
+
+.show-only-on-touch-primary {
+  .isMousePrimary & {
+    display: none !important;
+  }
+}
+
+.show-only-on-mouse-primary {
+  .isTouchPrimary & {
+    display: none !important;
+  }
+}
+
 .show-only-on-touch-only {
   .isNoTouchOnly & {
     display: none !important;
@@ -47,12 +71,6 @@
 
 .hide-gt-sm {
   @include mq(sm, max) {
-    display: none !important;
-  }
-}
-
-.show-xs-only {
-  @include mq(xs) {
     display: none !important;
   }
 }

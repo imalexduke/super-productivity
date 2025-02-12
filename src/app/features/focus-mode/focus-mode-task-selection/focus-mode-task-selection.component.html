@@ -1,5 +1,5 @@
 <form
-  (submit)="onSubmit($event)"
+  (submit)="$event.preventDefault();onSubmit($event)"
   novalidate
 >
   <h1>{{T.F.FOCUS_MODE.SELECT_TASK|translate}}</h1>
@@ -7,6 +7,7 @@
   <select-task
     (taskChange)="onTaskChange($event)"
     [initialTask]="initialTask$|async"
+    [isIncludeDoneTasks]="false"
   >
   </select-task>
   <br />

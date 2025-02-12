@@ -10,12 +10,13 @@ export enum ShowSubTasksMode {
   Show = 2,
 }
 
-export enum TaskAdditionalInfoTargetPanel {
+export enum TaskDetailTargetPanel {
   Default = 'Default',
   Attachments = 'Attachments',
+  DONT_OPEN_PANEL = 'DONT_OPEN_PANEL',
 }
 
-export type DropListModelSource = 'UNDONE' | 'DONE' | 'BACKLOG';
+export type DropListModelSource = 'UNDONE' | 'DONE' | 'BACKLOG' | 'ADD_TASK_PANEL';
 
 // NOTE: do not change these, as they are used inside task repeat model directly
 // (new can be added though)
@@ -46,13 +47,19 @@ export interface TaskArchive extends EntityState<ArchiveTask> {
 
 export type TimeSpentOnDay = Readonly<TimeSpentOnDayCopy>;
 
+export interface IssueTaskTimeTracked {
+  [key: string]: number;
+}
+
 export interface IssueFieldsForTask {
   // NOTE: keep in mind that the issueId is not unique (especially for github)
   issueId: string | null;
+  issueProviderId: string | null;
   issueType: IssueProviderKey | null;
   issueWasUpdated: boolean | null;
   issueLastUpdated: number | null;
   issueAttachmentNr: number | null;
+  issueTimeTracked: IssueTaskTimeTracked | null;
   issuePoints: number | null;
 }
 
@@ -112,9 +119,17 @@ export interface TaskPlanned extends Task {
   plannedAt: number;
 }
 
+export interface TaskWithPlannedDay extends Task {
+  plannedDay: string;
+}
+
 export interface TaskWithoutReminder extends Task {
   reminderId: null;
   plannedAt: null;
+}
+
+export interface TaskWithPlannedForDayIndication extends TaskWithoutReminder {
+  plannedForDay: string;
 }
 
 export interface TaskWithSubTasks extends Task {
@@ -144,11 +159,13 @@ export const DEFAULT_TASK: Task = {
   attachments: [],
 
   issueId: null,
+  issueProviderId: null,
   issuePoints: null,
   issueType: null,
   issueAttachmentNr: null,
   issueLastUpdated: null,
   issueWasUpdated: null,
+  issueTimeTracked: null,
 };
 
 export interface TaskState extends EntityState<Task> {
@@ -158,7 +175,7 @@ export interface TaskState extends EntityState<Task> {
   // additional entities state properties
   currentTaskId: string | null;
   selectedTaskId: string | null;
-  taskAdditionalInfoTargetPanel: TaskAdditionalInfoTargetPanel | null;
+  taskDetailTargetPanel: TaskDetailTargetPanel | null;
   lastCurrentTaskId: string | null;
   isDataLoaded: boolean;
 

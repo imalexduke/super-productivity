@@ -3,7 +3,7 @@ on:
   release:
     types: [published]
   workflow_dispatch:
-    inputs: null
+    inputs: {}
 
 jobs:
   mac-store-release:
@@ -14,9 +14,9 @@ jobs:
     steps:
       - uses: actions/setup-node@v3
         with:
-          node-version: 16
+          node-version: 20
       - name: Check out Git repository
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
         with:
           persist-credentials: false
       # work around for npm installs from git+https://github.com/johannesjo/J2M.git
@@ -29,13 +29,16 @@ jobs:
         id: npm-cache-dir
         run: |
           echo "::set-output name=dir::$(npm config get cache)"
-      - uses: actions/cache@v3
+      - uses: actions/cache@v4
         id: npm-cache # use this to check for `cache-hit` ==> if: steps.npm-cache.outputs.cache-hit != 'true'
         with:
           path: ${{ steps.npm-cache-dir.outputs.dir }}
           key: ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}
           restore-keys: |
             ${{ runner.os }}-node-
+
+      - name: Workaround for nx issue and dmg licence issue
+        run: npm install @nx/nx-darwin-arm64 dmg-license
 
       - name: Install npm Packages
         #  if: steps.npm-cache.outputs.cache-hit != 'true'
@@ -47,7 +50,7 @@ jobs:
           PROVISION_PROFILE: ${{secrets.mas_provision_profile}}
 
       - name: Lint
-        run: npm run lint
+        run: npm run lint:ci
 
       - name: Test Unit
         run: npm run test
@@ -58,7 +61,7 @@ jobs:
       - name: Build Frontend & Electron
         run: npm run build
 
-      - uses: apple-actions/import-codesign-certs@v2
+      - uses: apple-actions/import-codesign-certs@v3
         with:
           p12-file-base64: ${{ secrets.mac_certs }}
           p12-password: ${{ secrets.mac_certs_password }}
@@ -66,14 +69,17 @@ jobs:
       - name: Build Electron app
         run: npm run dist:mac:mas:buildOnly
 
+      - run: ls app-builds
+        shell: bash
+
       - name: Validate App
-        run: ls app-builds; ls app-builds/mas; xcrun altool --type macos --validate-app -f app-builds/mas/Super*.pkg -u ${{secrets.APPLEID}} -p ${{secrets.APPLEIDPASS}}
+        run: ls app-builds; ls app-builds/mas-universal; xcrun altool --type macos --validate-app -f app-builds/mas-universal/super*.pkg -u ${{secrets.APPLE_ID}} -p ${{secrets.APPLE_APP_SPECIFIC_PASSWORD}}
         env:
-          APPLEID: ${{secrets.APPLEID}}
-          APPLEIDPASS: ${{secrets.APPLEIDPASS}}
+          APPLE_ID: ${{secrets.APPLE_ID}}
+          APPLE_APP_SPECIFIC_PASSWORD: ${{secrets.APPLE_APP_SPECIFIC_PASSWORD}}
 
       - name: Push to Store
-        run: xcrun altool --type macos --upload-app -f app-builds/mas/Super*.pkg -u ${{secrets.APPLEID}} -p ${{secrets.APPLEIDPASS}}
+        run: xcrun altool --type macos --upload-app -f app-builds/mas-universal/super*.pkg -u ${{secrets.APPLE_ID}} -p ${{secrets.APPLE_APP_SPECIFIC_PASSWORD}}
         env:
-          APPLEID: ${{secrets.APPLEID}}
-          APPLEIDPASS: ${{secrets.APPLEIDPASS}}
+          APPLE_ID: ${{secrets.APPLE_ID}}
+          APPLE_APP_SPECIFIC_PASSWORD: ${{secrets.APPLE_APP_SPECIFIC_PASSWORD}}

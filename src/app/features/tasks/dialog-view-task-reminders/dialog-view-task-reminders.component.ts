@@ -1,5 +1,12 @@
-import { ChangeDetectionStrategy, Component, Inject, OnDestroy } from '@angular/core';
-import { MAT_DIALOG_DATA, MatDialog, MatDialogRef } from '@angular/material/dialog';
+import { ChangeDetectionStrategy, Component, inject, OnDestroy } from '@angular/core';
+import {
+  MAT_DIALOG_DATA,
+  MatDialog,
+  MatDialogActions,
+  MatDialogContent,
+  MatDialogRef,
+  MatDialogTitle,
+} from '@angular/material/dialog';
 import { Reminder } from '../../reminder/reminder.model';
 import { Task, TaskWithReminderData } from '../task.model';
 import { TaskService } from '../task.service';
@@ -7,14 +14,19 @@ import { BehaviorSubject, Observable, Subscription } from 'rxjs';
 import { ReminderService } from '../../reminder/reminder.service';
 import { first, map, switchMap, takeWhile } from 'rxjs/operators';
 import { T } from '../../../t.const';
-import { DialogAddTaskReminderComponent } from '../dialog-add-task-reminder/dialog-add-task-reminder.component';
-import { AddTaskReminderInterface } from '../dialog-add-task-reminder/add-task-reminder-interface';
 import { TODAY_TAG } from '../../tag/tag.const';
 import { standardListAnimation } from '../../../ui/animations/standard-list.ani';
 import { unique } from '../../../util/unique';
 import { getTomorrow } from '../../../util/get-tomorrow';
 import { uniqueByProp } from '../../../util/unique-by-prop';
 import { ProjectService } from '../../project/project.service';
+import { DialogScheduleTaskComponent } from '../../planner/dialog-schedule-task/dialog-schedule-task.component';
+import { MatIcon } from '@angular/material/icon';
+import { MatButton, MatIconButton } from '@angular/material/button';
+import { MatMenu, MatMenuItem, MatMenuTrigger } from '@angular/material/menu';
+import { AsyncPipe } from '@angular/common';
+import { TranslatePipe } from '@ngx-translate/core';
+import { TagListComponent } from '../../tag/tag-list/tag-list.component';
 
 const M = 1000 * 60;
 
@@ -24,8 +36,32 @@ const M = 1000 * 60;
   styleUrls: ['./dialog-view-task-reminders.component.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush,
   animations: [standardListAnimation],
+  imports: [
+    MatDialogTitle,
+    MatIcon,
+    MatDialogContent,
+    MatIconButton,
+    MatMenuTrigger,
+    MatMenu,
+    MatMenuItem,
+    MatDialogActions,
+    MatButton,
+    AsyncPipe,
+    TranslatePipe,
+    TagListComponent,
+  ],
 })
 export class DialogViewTaskRemindersComponent implements OnDestroy {
+  private _matDialogRef =
+    inject<MatDialogRef<DialogViewTaskRemindersComponent>>(MatDialogRef);
+  private _taskService = inject(TaskService);
+  private _projectService = inject(ProjectService);
+  private _matDialog = inject(MatDialog);
+  private _reminderService = inject(ReminderService);
+  data = inject<{
+    reminders: Reminder[];
+  }>(MAT_DIALOG_DATA);
+
   T: typeof T = T;
   isDisableControls: boolean = false;
   reminders$: BehaviorSubject<Reminder[]> = new BehaviorSubject(this.data.reminders);
@@ -59,14 +95,7 @@ export class DialogViewTaskRemindersComponent implements OnDestroy {
 
   private _subs: Subscription = new Subscription();
 
-  constructor(
-    private _matDialogRef: MatDialogRef<DialogViewTaskRemindersComponent>,
-    private _taskService: TaskService,
-    private _projectService: ProjectService,
-    private _matDialog: MatDialog,
-    private _reminderService: ReminderService,
-    @Inject(MAT_DIALOG_DATA) public data: { reminders: Reminder[] },
-  ) {
+  constructor() {
     // this._matDialogRef.disableClose = true;
     this._subs.add(
       this._reminderService.onReloadModel$.subscribe(() => {
@@ -94,25 +123,23 @@ export class DialogViewTaskRemindersComponent implements OnDestroy {
         .getByIdOnce$(task.parentId)
         .pipe(first())
         .toPromise();
-      this._taskService.updateTags(
-        parent,
-        [TODAY_TAG.id, ...parent.tagIds],
-        parent.tagIds,
-      );
+      this._taskService.updateTags(parent, [TODAY_TAG.id, ...parent.tagIds]);
       this.dismiss(task);
     } else {
-      this._taskService.updateTags(task, [TODAY_TAG.id, ...task.tagIds], task.tagIds);
+      this._taskService.updateTags(task, [TODAY_TAG.id, ...task.tagIds]);
       this.dismiss(task);
     }
   }
 
   dismiss(task: TaskWithReminderData): void {
-    this._taskService.update(task.id, {
-      reminderId: null,
-      plannedAt: null,
-    });
-    this._reminderService.removeReminder(task.reminderData.id);
-    this._removeFromList(task.reminderId as string);
+    if (task.projectId || task.parentId || task.tagIds.length > 0) {
+      this._taskService.update(task.id, {
+        reminderId: null,
+        plannedAt: null,
+      });
+      this._reminderService.removeReminder(task.reminderData.id);
+      this._removeFromList(task.reminderId as string);
+    }
   }
 
   snooze(task: TaskWithReminderData, snoozeInMinutes: number): void {
@@ -137,9 +164,9 @@ export class DialogViewTaskRemindersComponent implements OnDestroy {
   editReminder(task: TaskWithReminderData, isCloseAfter: boolean = false): void {
     this._subs.add(
       this._matDialog
-        .open(DialogAddTaskReminderComponent, {
+        .open(DialogScheduleTaskComponent, {
           restoreFocus: true,
-          data: { task } as AddTaskReminderInterface,
+          data: { task },
         })
         .afterClosed()
         .subscribe((wasEdited) => {
@@ -210,7 +237,7 @@ export class DialogViewTaskRemindersComponent implements OnDestroy {
     const updateTagTasks = uniqueByProp<Task>([...parents, ...mainTasks], 'id');
 
     updateTagTasks.forEach((task) => {
-      this._taskService.updateTags(task, [TODAY_TAG.id, ...task.tagIds], task.tagIds);
+      this._taskService.updateTags(task, [TODAY_TAG.id, ...task.tagIds]);
     });
     tasksToDismiss.forEach((task: TaskWithReminderData) => {
       this.dismiss(task);
@@ -223,7 +250,9 @@ export class DialogViewTaskRemindersComponent implements OnDestroy {
     this.isDisableControls = true;
     const tasks = await this.tasks$.pipe(first()).toPromise();
     tasks.forEach((task) => {
-      this.dismiss(task);
+      if (task.projectId || task.parentId || task.tagIds.length > 0) {
+        this.dismiss(task);
+      }
     });
     this._close();
   }

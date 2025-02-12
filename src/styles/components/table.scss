@@ -1,20 +1,22 @@
 table {
+  th,
+  td {
+    // overwrite material stuff for inline input
+    overflow-x: visible !important;
+    overflow-y: visible !important;
+  }
+
   @include mq(xs) {
     th,
     td {
       padding: 0 $s;
-    }
 
-    th,
-    td {
       &:first-child {
-        padding-left: 0;
+        //padding-left: 0;
       }
-    }
-    th,
-    td {
+
       &:last-child {
-        padding-right: 0;
+        //padding-right: 0;
       }
     }
   }
@@ -27,6 +29,7 @@ table {
 
 $this-table-min-height: $s * 2;
 $this-table-shadow: $whiteframe-shadow-1dp;
+
 div.material-table {
   box-shadow: $this-table-shadow;
   border-radius: $card-border-radius;
@@ -72,6 +75,20 @@ div.material-table {
 
   tr {
     min-height: $this-table-min-height;
+
+    &:first-of-type {
+      th,
+      td {
+        border-top-width: 0;
+      }
+    }
+
+    &:last-of-type {
+      th,
+      td {
+        border-bottom-width: 0;
+      }
+    }
   }
 
   th,
@@ -99,22 +116,6 @@ div.material-table {
 
     &:last-of-type {
       padding-right: $s * 3;
-    }
-  }
-
-  tr {
-    &:first-of-type {
-      th,
-      td {
-        border-top-width: 0;
-      }
-    }
-
-    &:last-of-type {
-      th,
-      td {
-        border-bottom-width: 0;
-      }
     }
   }
 }

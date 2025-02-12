@@ -1,8 +1,10 @@
-import { Injectable } from '@angular/core';
+import { Injectable, inject } from '@angular/core';
 import { Actions, createEffect, ofType } from '@ngrx/effects';
 import {
+  addSubTask,
+  addTask,
   deleteTask,
-  moveToArchive,
+  moveToArchive_,
   setCurrentTask,
   toggleStart,
   unsetCurrentTask,
@@ -11,7 +13,10 @@ import {
 import { select, Store } from '@ngrx/store';
 import { filter, map, mergeMap, withLatestFrom } from 'rxjs/operators';
 import { selectTaskFeatureState } from './task.selectors';
-import { selectMiscConfig } from '../../config/store/global-config.reducer';
+import {
+  selectConfigFeatureState,
+  selectMiscConfig,
+} from '../../config/store/global-config.reducer';
 import { Task, TaskState } from '../task.model';
 import { EMPTY, of } from 'rxjs';
 import { WorkContextService } from '../../work-context/work-context.service';
@@ -22,6 +27,10 @@ import {
 
 @Injectable()
 export class TaskInternalEffects {
+  private _actions$ = inject(Actions);
+  private _store$ = inject<Store<any>>(Store);
+  private _workContextSession = inject(WorkContextService);
+
   onAllSubTasksDone$: any = createEffect(() =>
     this._actions$.pipe(
       ofType(updateTask),
@@ -59,25 +68,51 @@ export class TaskInternalEffects {
     ),
   );
 
+  setDefaultEstimateIfNonGiven$: any = createEffect(() =>
+    this._actions$.pipe(
+      ofType(addTask, addSubTask),
+      filter(({ task }) => !task.timeEstimate),
+      withLatestFrom(this._store$.pipe(select(selectConfigFeatureState))),
+      filter(
+        ([{ task }, cfg]) =>
+          (!task.timeEstimate && cfg.timeTracking.defaultEstimate > 0) ||
+          cfg.timeTracking.defaultEstimateSubTasks > 0,
+      ),
+      map(([action, cfg]) =>
+        updateTask({
+          task: {
+            id: action.task.id,
+            changes: {
+              timeEstimate:
+                action.task.parentId || (action as any).parentId
+                  ? cfg.timeTracking.defaultEstimateSubTasks
+                  : cfg.timeTracking.defaultEstimate,
+            },
+          },
+        }),
+      ),
+    ),
+  );
+
   autoSetNextTask$: any = createEffect(() =>
     this._actions$.pipe(
       ofType(
         toggleStart,
         updateTask,
         deleteTask,
-        moveToArchive,
+        moveToArchive_,
 
         moveProjectTaskToBacklogList.type,
         moveProjectTaskToBacklogListAuto.type,
       ),
       withLatestFrom(
-        this._store$.pipe(select(selectMiscConfig)),
+        this._store$.pipe(select(selectConfigFeatureState)),
         this._store$.pipe(select(selectTaskFeatureState)),
         this._workContextSession.todaysTaskIds$,
-        (action, miscCfg, state, todaysTaskIds) => ({
+        (action, globalCfg, state, todaysTaskIds) => ({
           action,
           state,
-          isAutoStartNextTask: miscCfg.isAutoStartNextTask,
+          isAutoStartNextTask: globalCfg.timeTracking.isAutoStartNextTask,
           todaysTaskIds,
         }),
       ),
@@ -126,7 +161,7 @@ export class TaskInternalEffects {
 
           // NOTE: currently no solution for this, but we're probably fine, as the current task
           // gets unset every time we go to the finish day view
-          // case moveToArchive: {}
+          // case moveToArchive_: {}
         }
 
         if (nextId === 'NO_UPDATE') {
@@ -141,12 +176,6 @@ export class TaskInternalEffects {
       }),
     ),
   );
-
-  constructor(
-    private _actions$: Actions,
-    private _store$: Store<any>,
-    private _workContextSession: WorkContextService,
-  ) {}
 
   private _findNextTask(
     state: TaskState,

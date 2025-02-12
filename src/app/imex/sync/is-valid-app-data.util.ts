@@ -4,6 +4,8 @@ import { devError } from '../../util/dev-error';
 import { Tag } from '../../features/tag/tag.model';
 import { Project } from '../../features/project/project.model';
 import { Task } from '../../features/tasks/task.model';
+import { IssueProvider } from '../../features/issue/issue.model';
+import { environment } from '../../../environments/environment';
 
 export const isValidAppData = (d: AppDataComplete): boolean => {
   const dAny: any = d;
@@ -28,6 +30,9 @@ export const isValidAppData = (d: AppDataComplete): boolean => {
     dAny.globalConfig !== null &&
     typeof dAny.taskArchive === 'object' &&
     dAny.taskArchive !== null &&
+    // TODO add check later
+    // typeof dAny.issueProvider === 'object' &&
+    // dAny.issueProvider !== null &&
     typeof dAny.project === 'object' &&
     dAny.project !== null &&
     Array.isArray(d.reminders) &&
@@ -36,7 +41,8 @@ export const isValidAppData = (d: AppDataComplete): boolean => {
     _isAllNotesAvailableAndListConsistent(d) &&
     _isNoLonelySubTasks(d) &&
     _isNoMissingSubTasks(d) &&
-    _isAllProjectsAvailable(d) &&
+    _isAllProjectsAvailableForTasks(d) &&
+    _isAllProjectsAvailableForIssueProviders(d) &&
     _isAllTagsAvailable(d) &&
     _isAllRemindersAvailable(d) &&
     _isAllTasksHaveAProjectOrTag(d);
@@ -47,18 +53,30 @@ export const isValidAppData = (d: AppDataComplete): boolean => {
 
 let lastValidityError: string;
 export const getLastValidityError = (): string | undefined => lastValidityError;
-const _validityError = (errTxt: string): void => {
+const _validityError = (errTxt: string, additionalInfo?: any): void => {
+  if (additionalInfo) {
+    console.log('Validity Error Info: ', additionalInfo);
+  }
   devError(errTxt);
   lastValidityError = errTxt;
 };
 
 const _isAllRemindersAvailable = ({ reminders, task }: AppDataComplete): boolean => {
+  if (environment.production) {
+    // NOTE don't check for production, is it is not a big problem
+    return true;
+  }
+
   let isValid: boolean = true;
   task.ids.forEach((id: string) => {
     const t: Task = task.entities[id] as Task;
     if (t.reminderId && !reminders.find((r) => r.id === t.reminderId)) {
       console.log({ task: t, reminders });
-      _validityError(`Missing reminder ${t.reminderId} from task not existing`);
+      _validityError(`Missing reminder ${t.reminderId} from task not existing`, {
+        t,
+        reminders,
+        task,
+      });
       isValid = false;
     }
   });
@@ -66,14 +84,14 @@ const _isAllRemindersAvailable = ({ reminders, task }: AppDataComplete): boolean
   return isValid;
 };
 
-const _isAllProjectsAvailable = (data: AppDataComplete): boolean => {
+const _isAllProjectsAvailableForTasks = (data: AppDataComplete): boolean => {
   let isValid: boolean = true;
   const pids = data.project.ids as string[];
   data.task.ids.forEach((id: string) => {
     const t: Task = data.task.entities[id] as Task;
     if (t.projectId && !pids.includes(t.projectId)) {
       console.log(t);
-      _validityError(`projectId ${t.projectId} from task not existing`);
+      _validityError(`projectId ${t.projectId} from task not existing`, { t, data });
       isValid = false;
     }
   });
@@ -81,7 +99,28 @@ const _isAllProjectsAvailable = (data: AppDataComplete): boolean => {
     const t: Task = data.taskArchive.entities[id] as Task;
     if (t.projectId && !pids.includes(t.projectId)) {
       console.log(t);
-      _validityError(`projectId ${t.projectId} from archive task not existing`);
+      _validityError(`projectId ${t.projectId} from archive task not existing`, {
+        t,
+        data,
+      });
+      isValid = false;
+    }
+  });
+
+  return isValid;
+};
+
+const _isAllProjectsAvailableForIssueProviders = (data: AppDataComplete): boolean => {
+  let isValid: boolean = true;
+  const pids = data.project.ids as string[];
+  data.issueProvider.ids.forEach((id: string) => {
+    const ip: IssueProvider = data.issueProvider.entities[id] as IssueProvider;
+    if (ip.defaultProjectId && !pids.includes(ip.defaultProjectId)) {
+      console.log(ip);
+      _validityError(
+        `defaultProjectId ${ip.defaultProjectId} from issueProvider not existing`,
+        { t: ip, data },
+      );
       isValid = false;
     }
   });
@@ -97,7 +136,7 @@ const _isAllTagsAvailable = (data: AppDataComplete): boolean => {
     const missingTagId = t.tagIds.find((tagId) => !allTagIds.includes(tagId));
     if (missingTagId) {
       console.log(t);
-      _validityError(`tagId "${missingTagId}" from task not existing`);
+      _validityError(`tagId "${missingTagId}" from task not existing`, { t, data });
       isValid = false;
     }
   });
@@ -106,7 +145,10 @@ const _isAllTagsAvailable = (data: AppDataComplete): boolean => {
     const missingTagId = t.tagIds.find((tagId) => !allTagIds.includes(tagId));
     if (missingTagId) {
       console.log(t);
-      _validityError(`tagId "${missingTagId}" from task archive not existing`);
+      _validityError(`tagId "${missingTagId}" from task archive not existing`, {
+        t,
+        data,
+      });
       isValid = false;
     }
   });
@@ -119,7 +161,7 @@ const _isAllTasksHaveAProjectOrTag = (data: AppDataComplete): boolean => {
   data.task.ids.forEach((id: string) => {
     const t: Task = data.task.entities[id] as Task;
     if (!t.parentId && !t.projectId && !t.tagIds.length) {
-      _validityError(`Task without project or tag`);
+      _validityError(`Task without project or tag`, { t, data });
       isValid = false;
     }
   });
@@ -136,7 +178,7 @@ const _isAllTasksAvailableAndListConsistent = (data: AppDataComplete): boolean =
     .forEach((tag) => {
       if (!tag) {
         console.log(data.tag);
-        _validityError('No tag');
+        _validityError('No tag', { tag, data });
         throw new Error('No tag');
       }
       allIds = allIds.concat(tag.taskIds);
@@ -159,12 +201,13 @@ const _isAllTasksAvailableAndListConsistent = (data: AppDataComplete): boolean =
           isMissingTaskData = true;
           _validityError(
             'Missing task data (tid: ' + tid + ') for Project ' + project.title,
+            { project, data },
           );
         } else if (task.projectId !== project.id) {
           isInconsistentProjectId = true;
           console.log('--------------------------------');
           console.log('tid', task.projectId, 'pid', project.id, { task, project });
-          _validityError('Inconsistent task projectId');
+          _validityError('Inconsistent task projectId', { task, project, data });
         }
       });
     });
@@ -189,6 +232,7 @@ const _isAllTasksAvailableAndListConsistent = (data: AppDataComplete): boolean =
         idNotFound +
         ' for Project/Tag ' +
         ((tag as Tag) || (project as Project)).title,
+      { tag, project, data },
     );
   }
 
@@ -215,12 +259,13 @@ const _isAllNotesAvailableAndListConsistent = (data: AppDataComplete): boolean =
           isMissingNoteData = true;
           _validityError(
             'Missing note data (tid: ' + tid + ') for Project ' + project.title,
+            { project, note, data },
           );
         } else if (note.projectId !== project.id) {
           isInconsistentProjectId = true;
           console.log('--------------------------------');
           console.log('nid', note.projectId, 'pid', project.id, { note, project });
-          _validityError('Inconsistent note projectId');
+          _validityError('Inconsistent note projectId', { project, note, data });
         }
       });
     });
@@ -239,6 +284,7 @@ const _isAllNotesAvailableAndListConsistent = (data: AppDataComplete): boolean =
         idNotFound +
         ' for Project ' +
         project?.title,
+      { project, data },
     );
   }
 
@@ -265,7 +311,7 @@ const _isEntityStatesConsistent = (data: AppDataComplete): boolean => {
   const brokenBaseItem = baseStateKeys.find((key) => {
     if (!isEntityStateConsistent(data[key], key)) {
       console.log(key, data[key]);
-      _validityError('Inconsistent entity state for ' + key);
+      _validityError('Inconsistent entity state for ' + key, { key, data });
       return true;
     }
     return false;
@@ -286,7 +332,11 @@ const _isEntityStatesConsistent = (data: AppDataComplete): boolean => {
         )
       ) {
         console.log(projectModelKey, projectId, (data as any)[projectId]);
-        _validityError('Inconsistent entity state for ' + projectModelKey);
+        _validityError('Inconsistent entity state for ' + projectModelKey, {
+          projectId,
+          projectModelKey,
+          data,
+        });
         return true;
       }
       return false;
@@ -302,7 +352,10 @@ const _isNoLonelySubTasks = (data: AppDataComplete): boolean => {
     const t: Task = data.task.entities[id] as Task;
     if (t.parentId && !data.task.entities[t.parentId]) {
       console.log(t);
-      _validityError(`Inconsistent Task State: Lonely Sub Task in Today ${t.id}`);
+      _validityError(`Inconsistent Task State: Lonely Sub Task in Today ${t.id}`, {
+        t,
+        data,
+      });
       isValid = false;
     }
   });
@@ -311,7 +364,10 @@ const _isNoLonelySubTasks = (data: AppDataComplete): boolean => {
     const t: Task = data.taskArchive.entities[id] as Task;
     if (t.parentId && !data.taskArchive.entities[t.parentId]) {
       console.log(t);
-      _validityError(`Inconsistent Task State: Lonely Sub Task in Archive ${t.id}`);
+      _validityError(`Inconsistent Task State: Lonely Sub Task in Archive ${t.id}`, {
+        t,
+        data,
+      });
       isValid = false;
     }
   });
@@ -329,6 +385,7 @@ const _isNoMissingSubTasks = (data: AppDataComplete): boolean => {
           console.log(t);
           _validityError(
             `Inconsistent Task State: Missing sub task data in today ${subId}`,
+            { t, data },
           );
           isValid = false;
         }
@@ -344,6 +401,7 @@ const _isNoMissingSubTasks = (data: AppDataComplete): boolean => {
           console.log(t);
           _validityError(
             `Inconsistent Task State: Missing sub task data in archive ${subId}`,
+            { t, data },
           );
           isValid = false;
         }

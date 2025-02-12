@@ -3,7 +3,7 @@
 ### build ###
 
 # base image
-FROM node:16 as build
+FROM --platform=$BUILDPLATFORM node:20 as build
 
 # add app
 COPY . /app
@@ -26,13 +26,19 @@ RUN npm run buildFrontend:prodWeb
 ### serve ###
 
 # base image
-FROM nginx:1-alpine
+# --platform=$TARGETPLATFORM is redundant and docker will raise a warning,
+# but it makes it clearer that the target platform might be different from the
+# build platform
+FROM --platform=$TARGETPLATFORM nginx:1-alpine
 
 # environmental variables
 ENV PORT=80
 
 # copy artifact build from the 'build environment'
-COPY --from=build /app/dist /usr/share/nginx/html
+COPY --from=build /app/dist/browser /usr/share/nginx/html
+
+# copy nginx config
+COPY ./nginx/default.conf.template /etc/nginx/templates/default.conf.template
 
 # expose port: defaults to 80
 EXPOSE $PORT

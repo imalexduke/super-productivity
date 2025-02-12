@@ -1,4 +1,4 @@
-import { Injectable } from '@angular/core';
+import { Injectable, inject } from '@angular/core';
 import { Actions, createEffect, ofType } from '@ngrx/effects';
 import {
   setCurrentTask,
@@ -33,13 +33,18 @@ import { NotifyService } from '../../../core/notify/notify.service';
 import { IS_ELECTRON } from '../../../app.constants';
 import { T } from '../../../t.const';
 import { SnackService } from '../../../core/snack/snack.service';
-import { ElectronService } from '../../../core/electron/electron.service';
-import { ipcRenderer } from 'electron';
-import { IPC } from '../../../../../electron/shared-with-frontend/ipc-events.const';
 import { TaskService } from '../../tasks/task.service';
 
 @Injectable()
 export class PomodoroEffects {
+  private _pomodoroService = inject(PomodoroService);
+  private _actions$ = inject(Actions);
+  private _notifyService = inject(NotifyService);
+  private _matDialog = inject(MatDialog);
+  private _snackService = inject(SnackService);
+  private _store$ = inject<Store<any>>(Store);
+  private _taskService = inject(TaskService);
+
   currentTaskId$: Observable<string | null> = this._store$.pipe(
     select(selectCurrentTaskId),
   );
@@ -261,26 +266,12 @@ export class PomodoroEffects {
           tap(([progress, isPause, isPauseBreak]: [number, boolean, boolean]) => {
             const progressBarMode: 'normal' | 'pause' =
               isPause || isPauseBreak ? 'pause' : 'normal';
-            (this._electronService.ipcRenderer as typeof ipcRenderer).send(
-              IPC.SET_PROGRESS_BAR,
-              {
-                progress,
-                progressBarMode,
-              },
-            );
+            window.ea.setProgressBar({
+              progress,
+              progressBarMode,
+            });
           }),
         ),
       { dispatch: false },
     );
-
-  constructor(
-    private _pomodoroService: PomodoroService,
-    private _actions$: Actions,
-    private _notifyService: NotifyService,
-    private _matDialog: MatDialog,
-    private _electronService: ElectronService,
-    private _snackService: SnackService,
-    private _store$: Store<any>,
-    private _taskService: TaskService,
-  ) {}
 }

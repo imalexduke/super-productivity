@@ -9,12 +9,17 @@
   }
 
   &.keyboard {
-    ::ng-deep formly-field {
+    ::ng-deep formly-field > formly-group {
       box-sizing: border-box;
       padding: 0 $s;
-      width: 50%;
-      display: block;
-      float: left;
+      display: grid;
+      grid: auto-flow / 1fr;
+      gap: 0;
+
+      @include mq(xs) {
+        gap: 0 $s * 2;
+        grid: auto-flow / 1fr 1fr;
+      }
     }
   }
 }
@@ -32,9 +37,6 @@ $this-panel-padding-left-right: 12px;
   padding: 10px $this-panel-padding-left-right;
 }
 
-:host ::ng-deep .collapsible-expand-icon {
-}
-
 :host ::ng-deep .collapsible-panel {
   //border-top: 1px solid black;
   overflow: visible;
@@ -50,19 +52,22 @@ $this-panel-padding-left-right: 12px;
 }
 
 :host ::ng-deep .help-btn {
-  display: none;
   position: absolute;
   top: -40px;
   right: -2px;
-}
 
-:host ::ng-deep .help-btn {
   display: block;
   animation: $transition-duration-m help-ico-animation $ani-standard-timing;
 }
 
 :host ::ng-deep .extra-margin-top {
   margin-top: $s * 4;
+}
+
+:host ::ng-deep .footer {
+  margin: auto;
+  margin-top: $s * 2;
+  text-align: center;
 }
 
 @keyframes help-ico-animation {

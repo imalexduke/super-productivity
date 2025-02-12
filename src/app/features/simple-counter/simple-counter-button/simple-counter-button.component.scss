@@ -1,4 +1,4 @@
-@use "sass:math";
+@use 'sass:math';
 
 @import '../../../../variables';
 
@@ -18,13 +18,39 @@
   // needs to be above the rest
   z-index: 2;
 
+  &.isTimeUp {
+    border: 2px solid $c-accent;
+  }
+
   .mat-icon {
     position: relative;
     z-index: 2;
     transform: translateY(-2px);
+
+    :host(.isSuccess) & {
+      opacity: 0.25;
+      font-size: 28px;
+      width: 28px;
+      height: 28px;
+    }
+  }
+
+  .check-ico {
+    //color: $c-primary;
+    opacity: 1 !important;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -64%);
+    font-size: 32px;
+    width: 32px;
+    height: 32px;
+    //font-weight: bold;
+    z-index: 3;
   }
 }
 
+.extra-label,
 .label {
   margin-left: 0;
   position: absolute;
@@ -50,6 +76,11 @@
   .wrapper:hover .stopwatch & {
     opacity: 0;
   }
+}
+
+.extra-label {
+  bottom: auto;
+  top: -4px;
 }
 
 .controls {

@@ -1,4 +1,4 @@
-import { Injectable } from '@angular/core';
+import { Injectable, inject } from '@angular/core';
 import { Actions, createEffect, ofType } from '@ngrx/effects';
 import {
   cancelFocusSession,
@@ -34,9 +34,6 @@ import { Store } from '@ngrx/store';
 import { unsetCurrentTask } from '../../tasks/store/task.actions';
 import { playSound } from '../../../util/play-sound';
 import { IS_ELECTRON } from '../../../app.constants';
-import { ipcRenderer } from 'electron';
-import { IPC } from '../../../../../electron/shared-with-frontend/ipc-events.const';
-import { ElectronService } from '../../../core/electron/electron.service';
 import { IdleService } from '../../idle/idle.service';
 import { FocusModePage } from '../focus-mode.const';
 import { selectFocusModeConfig } from '../../config/store/global-config.reducer';
@@ -48,6 +45,12 @@ const SESSION_DONE_SOUND = 'positive.ogg';
 
 @Injectable()
 export class FocusModeEffects {
+  private _store = inject(Store);
+  private _actions$ = inject(Actions);
+  private _idleService = inject(IdleService);
+  private _globalConfigService = inject(GlobalConfigService);
+  private _taskService = inject(TaskService);
+
   private _isRunning$ = this._store.select(selectIsFocusSessionRunning);
   private _sessionDuration$ = this._store.select(selectFocusSessionDuration);
   private _sessionProgress$ = this._store.select(selectFocusSessionProgress);
@@ -142,13 +145,10 @@ export class FocusModeEffects {
           withLatestFrom(this._isRunning$),
           tap(([progress, isRunning]: [number, boolean]) => {
             const progressBarMode: 'normal' | 'pause' = isRunning ? 'normal' : 'pause';
-            (this._electronService.ipcRenderer as typeof ipcRenderer).send(
-              IPC.SET_PROGRESS_BAR,
-              {
-                progress: progress / 100,
-                progressBarMode,
-              },
-            );
+            window.ea.setProgressBar({
+              progress: progress / 100,
+              progressBarMode,
+            });
           }),
         ),
       { dispatch: false },
@@ -161,30 +161,14 @@ export class FocusModeEffects {
         this._actions$.pipe(
           ofType(focusSessionDone),
           tap(() => {
-            (this._electronService.ipcRenderer as typeof ipcRenderer).send(
-              IPC.SHOW_OR_FOCUS,
-            );
-            (this._electronService.ipcRenderer as typeof ipcRenderer).send(
-              IPC.FLASH_FRAME,
-            );
-            (this._electronService.ipcRenderer as typeof ipcRenderer).send(
-              IPC.SET_PROGRESS_BAR,
-              {
-                progress: 100,
-                progressBarMode: 'normal',
-              },
-            );
+            window.ea.showOrFocus();
+            window.ea.flashFrame();
+            window.ea.setProgressBar({
+              progress: 100,
+              progressBarMode: 'normal',
+            });
           }),
         ),
       { dispatch: false },
     );
-
-  constructor(
-    private _store: Store,
-    private _actions$: Actions,
-    private _idleService: IdleService,
-    private _globalConfigService: GlobalConfigService,
-    private _taskService: TaskService,
-    private _electronService: ElectronService,
-  ) {}
 }
